@@ -26,17 +26,22 @@ export default function Login() {
       const { data: perfilData, error: perfilError } = await supabase
         .from('perfiles')
         .select('rol, nombre_completo')
-        .eq('id', authData.user.id)
-        .single();
+        .eq('id', authData.user.id); // Eliminamos maybeSingle() y usamos el array por ahora
 
       if (perfilError) throw perfilError;
 
-      // 3. Redirigimos según el rol (Aquí puedes usar react-router-dom más adelante)
-      alert(`¡Bienvenido ${perfilData.nombre_completo}! Has iniciado sesión como: ${perfilData.rol}`);
+      if (!perfilData || perfilData.length === 0) {
+        throw new Error("No se encontró un perfil asociado a esta cuenta en la tabla 'perfiles'.");
+      }
+
+      const perfil = perfilData[0];
+
+      // 3. Redirigimos según el rol
+      alert(`¡Bienvenido ${perfil.nombre_completo}! Has iniciado sesión como: ${perfil.rol}`);
       
-      if (perfilData.rol === 'super_admin') {
+      if (perfil.rol === 'super_admin') {
          console.log("Redirigiendo al panel de creación de entidades...");
-         // window.location.href = '/super-admin-dashboard';
+         // window.location.href = '/superadmin';
       }
 
     } catch (err) {
