@@ -6,6 +6,7 @@ const COLUMNAS = [
   { id: 0, key: "pendiente", title: "Pendiente" },
   { id: 1, key: "en_reparacion", title: "En Reparación" },
   { id: 2, key: "completado", title: "Completado" },
+  { id: 3, key: "rechazado", title: "Rechazado" },
 ];
 
 /**
@@ -42,12 +43,26 @@ export function useTareasTecnico() {
     }));
   }, [tareas]);
 
-  const cambiarEstado = useCallback(async (denunciaId, nuevoEstado) => {
-    await tareasTecnicoModel.cambiarEstado(denunciaId, nuevoEstado);
+  const historial = useMemo(() => {
+    return tareas
+      .filter((t) => t.estado === "completado" || t.estado === "rechazado")
+      .sort((a, b) => new Date(b.actualizado_el || b.creado_el) - new Date(a.actualizado_el || a.creado_el));
+  }, [tareas]);
+
+  const statsHistorial = useMemo(() => {
+    const completadas = historial.filter(t => t.estado === "completado").length;
+    const rechazadas = historial.filter(t => t.estado === "rechazado").length;
+    const total = historial.length;
+    const ratio = total > 0 ? Math.round((completadas / total) * 100) : 0;
+    return { completadas, rechazadas, total, ratio };
+  }, [historial]);
+
+  const cambiarEstado = useCallback(async (denunciaId, nuevoEstado, comentario = "") => {
+    await tareasTecnicoModel.cambiarEstado(denunciaId, nuevoEstado, comentario);
     setTareas((prev) =>
-      prev.map((t) => t.id === denunciaId ? { ...t, estado: nuevoEstado } : t)
+      prev.map((t) => t.id === denunciaId ? { ...t, estado: nuevoEstado, comentario_cierre: comentario } : t)
     );
   }, []);
 
-  return { tareas, agrupado, cargando, error, cargar, cambiarEstado, COLUMNAS };
+  return { tareas, agrupado, historial, statsHistorial, cargando, error, cargar, cambiarEstado, COLUMNAS };
 }

@@ -1,4 +1,5 @@
 import { supabase } from "../../../core/supabaseClient";
+import { uploadFile } from "../../../services/storageService";
 
 /**
  * Modelo de Tareas del Técnico
@@ -18,16 +19,41 @@ export const tareasTecnicoModel = {
 
     return await supabase
       .from("denuncias")
-      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,url_imagen,creado_el,actualizado_el")
+      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,url_imagen,creado_el,actualizado_el,comentario_cierre")
       .in("id", ids)
       .order("creado_el", { ascending: false });
   },
 
-  /** Cambiar estado de una denuncia con comentario */
-  async cambiarEstado(denunciaId, nuevoEstado, comentario) {
+  /** H051: Historial de tareas completadas o rechazadas */
+  async obtenerHistorial(tecnicoId) {
+    const { data: tareas } = await supabase
+      .from("tareas_kanban")
+      .select("id_denuncia")
+      .eq("id_responsable", tecnicoId);
+
+    const ids = [...new Set((tareas || []).map(t => t.id_denuncia))];
+    if (!ids.length) return { data: [], error: null };
+
+    return await supabase
+      .from("denuncias")
+      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,url_imagen,creado_el,actualizado_el,comentario_cierre")
+      .in("id", ids)
+      .in("estado", ["completado", "rechazado"])
+      .order("actualizado_el", { ascending: false });
+  },
+
+  /** Cambiar estado de una denuncia con comentario de cierre obligatorio */
+  async cambiarEstado(denunciaId, nuevoEstado, comentario = "") {
+    const esFinal = nuevoEstado === "completado" || nuevoEstado === "rechazado";
+
     const payload = {
       estado: nuevoEstado,
     };
+
+    // H026: Comentario obligatorio para estados finales
+    if (esFinal) {
+      payload.comentario_cierre = comentario || null;
+    }
 
     const { error } = await supabase
       .from("denuncias")
@@ -65,15 +91,8 @@ export const tareasTecnicoModel = {
 
   /** Subir foto justificativa a Supabase Storage */
   async subirFoto(archivo) {
-    const nombre = `justificaciones/${Date.now()}_${archivo.name}`;
-    const { data, error } = await supabase.storage
-      .from("evidencias")
-      .upload(nombre, archivo, { cacheControl: "3600", upsert: false });
-
-    if (error) throw new Error(`Error subiendo foto: ${error.message}`);
-
-    const { data: urlData } = supabase.storage.from("evidencias").getPublicUrl(data.path);
-    return urlData.publicUrl;
+    // Usamos el servicio centralizado que incluye la compresión al 80%
+    return await uploadFile("fotos", archivo, "justificaciones");
   },
 
   /** Listar técnicos de la misma entidad (para cuadrilla) */
@@ -100,5 +119,15 @@ export const tareasTecnicoModel = {
 
     const { error } = await supabase.from("cuadrilla_obra").insert(filas);
     if (error) throw new Error(error.message);
+  },
+
+  /** Listar catálogo de materiales (para selector) */
+  async listarMateriales() {
+    const { data, error } = await supabase
+      .from("materiales")
+      .select("id,nombre,unidad_medida")
+      .order("nombre");
+    if (error) throw new Error(error.message);
+    return data || [];
   },
 };

@@ -15,6 +15,7 @@ export default function RecursosView() {
 
   // Solicitud extra
   const [solicitando, setSolicitando] = useState(null); // denunciaId activo
+  const [catalogoMateriales, setCatalogoMateriales] = useState([]);
   const [matId, setMatId] = useState("");
   const [cantExtra, setCantExtra] = useState("");
   const [justificacion, setJustificacion] = useState("");
@@ -39,6 +40,14 @@ export default function RecursosView() {
     const mapa = {};
     pares.forEach(([id, recursos]) => { mapa[id] = recursos; });
     setRecursosPorTarea(mapa);
+
+    try {
+      const cat = await tareasTecnicoModel.listarMateriales();
+      setCatalogoMateriales(cat);
+    } catch (err) {
+      console.error("Error cargando catálogo:", err);
+    }
+
     setCargando(false);
   }, [perfil?.id]);
 
@@ -144,8 +153,12 @@ export default function RecursosView() {
                 <div style={{ marginTop: '16px', padding: '16px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fef08a' }}>
                   <h4 style={{ marginBottom: '12px', color: '#92400e' }}>Solicitar material adicional</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <input className="field" placeholder="ID del material" value={matId}
-                      onChange={(e) => setMatId(e.target.value)} />
+                    <select className="field" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={matId} onChange={(e) => setMatId(e.target.value)}>
+                      <option value="">-- Seleccionar Material --</option>
+                      {catalogoMateriales.map((m) => (
+                        <option key={m.id} value={m.id}>{m.nombre} ({m.unidad_medida})</option>
+                      ))}
+                    </select>
                     <input className="field" type="number" placeholder="Cantidad necesaria" min="1"
                       value={cantExtra} onChange={(e) => setCantExtra(e.target.value)} />
                     <textarea className="field" placeholder="Justificación: ¿Por qué necesitas más?"
