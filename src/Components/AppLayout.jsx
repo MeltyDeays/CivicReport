@@ -27,12 +27,16 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
   useEffect(() => {
     if (esTecnico && perfil?.id) {
       const verificarCargo = async () => {
-        const { data, count } = await supabase
-          .from("cuadrilla_obra")
-          .select("*", { count: 'exact', head: true })
-          .eq("id_tecnico_encargado", perfil.id);
-        
-        setEsEncargado(count > 0);
+        try {
+          const { data } = await supabase
+            .from("cuadrilla_obra")
+            .select("id")
+            .eq("id_tecnico_encargado", perfil.id)
+            .limit(1);
+          setEsEncargado((data?.length || 0) > 0);
+        } catch {
+          setEsEncargado(true);
+        }
       };
       verificarCargo();
     }

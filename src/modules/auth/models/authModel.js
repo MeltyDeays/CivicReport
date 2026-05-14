@@ -22,6 +22,9 @@ export async function registroCiudadano({ email, password, cedula, nombreComplet
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: { nombre_completo: nombreCompleto, cedula, rol: "ciudadano" }
+    }
   });
   if (authError) throw new Error(authError.message);
   const userId = authData.user?.id;
@@ -51,17 +54,21 @@ export async function registroInstitucional({ email, password, nombreCompleto, c
   if (entidadError || !entidad) throw new Error("Código de invitación inválido o no encontrado.");
   if (entidad.esta_usado) throw new Error(`El código ya fue reclamado por la entidad "${entidad.nombre}".`);
   // 2. Crear usuario en Supabase Auth
+  // Para AdminEntidad, cedula y nombreCompleto son opcionales en el UI, se autogeneran para la BD
+  const cedulaFinal = cedula || `ADMIN-${Date.now()}`;
+  const nombreFinal = nombreCompleto || `Administrador de ${entidad.nombre}`;
+
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: { nombre_completo: nombreFinal, cedula: cedulaFinal, rol: "admin_entidad", id_entidad: entidad.id }
+    }
   });
   if (authError) throw new Error(authError.message);
   const userId = authData.user?.id;
   if (!userId) throw new Error("No se pudo obtener el ID del usuario creado.");
   // 3. Crear perfil admin_entidad vinculado a la entidad
-  // Para AdminEntidad, cedula y nombreCompleto son opcionales en el UI, se autogeneran para la BD
-  const cedulaFinal = cedula || `ADMIN-${Date.now()}`;
-  const nombreFinal = nombreCompleto || `Administrador de ${entidad.nombre}`;
   const { error: perfilError } = await supabase.from("perfiles").insert([{
     id: userId,
     cedula: cedulaFinal,
@@ -94,6 +101,9 @@ export async function registroTecnico({ email, password, nombreCompleto, cedula,
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: { nombre_completo: nombreCompleto, cedula, rol: "tecnico", id_entidad: invitacion.entidad_id, especialidad: invitacion.especialidad }
+    }
   });
   if (authError) throw new Error(authError.message);
   const userId = authData.user?.id;

@@ -94,7 +94,7 @@ function App() {
         <Route
           element={
             <RutaProtegida sesion={sesion} rolActual={rolVista} rolesPermitidos={["ciudadano", "tecnico"]} cargandoSesion={cargandoSesion}>
-              <DisenoAplicacion rol="ciudadano" rolReal={rolVista} nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} />
+              <DisenoAplicacion rol="ciudadano" rolReal={rolVista} nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} sesion={sesion} perfil={perfil} />
             </RutaProtegida>
           }
         >
@@ -106,7 +106,7 @@ function App() {
         <Route
           element={
             <RutaProtegida sesion={sesion} rolActual={rolVista} rolesPermitidos={["tecnico"]} cargandoSesion={cargandoSesion}>
-              <DisenoAplicacion rol="tecnico" rolReal={rolVista} nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} />
+              <DisenoAplicacion rol="tecnico" rolReal={rolVista} nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} sesion={sesion} perfil={perfil} />
             </RutaProtegida>
           }
         >
@@ -117,7 +117,7 @@ function App() {
         <Route
           element={
             <RutaProtegida sesion={sesion} rolActual={rolVista} rolesPermitidos={["admin_entidad"]} cargandoSesion={cargandoSesion}>
-              <DisenoAplicacion rol="admin" nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} />
+              <DisenoAplicacion rol="admin" nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} sesion={sesion} perfil={perfil} />
             </RutaProtegida>
           }
         >
@@ -134,7 +134,7 @@ function App() {
         <Route
           element={
             <RutaProtegida sesion={sesion} rolActual={rolVista} rolesPermitidos={["super_admin"]} cargandoSesion={cargandoSesion}>
-              <DisenoAplicacion rol="super_admin" nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} />
+              <DisenoAplicacion rol="super_admin" nombreUsuario={perfil?.nombre_completo} alCerrarSesion={logout} sesion={sesion} perfil={perfil} />
             </RutaProtegida>
           }
         >

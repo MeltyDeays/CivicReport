@@ -9,4 +9,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error("Faltan las variables de entorno de Supabase. Verifica tu archivo .env.local");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 1
+    }
+  },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});

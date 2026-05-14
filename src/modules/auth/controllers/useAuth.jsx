@@ -16,7 +16,12 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [cargandoSesion, setCargandoSesion] = useState(true);
   const [sesion, setSesion] = useState(null);
-  const [perfil, setPerfil] = useState(null);
+  const [perfil, setPerfil] = useState(() => {
+    try {
+      const saved = localStorage.getItem("civic_profile");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
 
   useEffect(() => {
     let activo = true;
@@ -40,7 +45,10 @@ export function AuthProvider({ children }) {
              perfilActual = await fetchProfileByUserId(session.user.id).catch(() => null);
           }
           
-          if (activo) setPerfil(perfilActual);
+          if (activo) {
+            setPerfil(perfilActual);
+            if (perfilActual) localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+          }
         }
       } catch (err) {
         console.error("Error al inicializar sesión:", err);
@@ -54,15 +62,36 @@ export function AuthProvider({ children }) {
     const { data } = supabase.auth.onAuthStateChange(async (evento, nuevaSesion) => {
       // Ignoramos INITIAL_SESSION para que no colisione con getSession() (evita deadlocks)
       if (evento === 'INITIAL_SESSION') return;
+      
+      // Si el token se refresca, no necesitamos reiniciar todo el estado, solo actualizar la sesión
+      if (evento === 'TOKEN_REFRESHED') {
+        if (activo) setSesion(nuevaSesion);
+        return;
+      }
 
       if (!activo) return;
       
+      // Solo actualizamos si realmente hubo un cambio significativo o cierre de sesión
+      if (!nuevaSesion) {
+        setSesion(null);
+        setPerfil(null);
+        setCargandoSesion(false);
+        return;
+      }
+
       setSesion(nuevaSesion);
       if (nuevaSesion?.user?.id) {
         try {
+          // Si ya tenemos el perfil y el ID coincide, no lo volvemos a cargar (evita parpadeos y "vaciado")
+          if (perfil && perfil.id === nuevaSesion.user.id) {
+            setCargandoSesion(false);
+            return;
+          }
+
           const perfilActual = await fetchProfileByUserId(nuevaSesion.user.id).catch(() => null);
           if (activo) {
             setPerfil(perfilActual);
+            if (perfilActual) localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
             setCargandoSesion(false);
           }
         } catch {
@@ -70,11 +99,6 @@ export function AuthProvider({ children }) {
             setPerfil(null);
             setCargandoSesion(false);
           }
-        }
-      } else {
-        if (activo) {
-          setPerfil(null);
-          setCargandoSesion(false);
         }
       }
     });
@@ -103,8 +127,33 @@ export function AuthProvider({ children }) {
         const sesionNueva = respuesta.session;
         setSesion(sesionNueva);
         if (sesionNueva?.user?.id) {
-          const perfilActual = await fetchProfileByUserId(sesionNueva.user.id);
-          setPerfil(perfilActual);
+          try {
+            let perfilActual = await fetchProfileByUserId(sesionNueva.user.id);
+            
+            // Auto-reparación: Si no hay perfil pero hay sesión (ej. fallo RLS en registro)
+            if (!perfilActual) {
+              console.log("Perfil no encontrado, intentando auto-creación...");
+              const meta = sesionNueva.user.user_metadata || {};
+              const { error: insertError } = await supabase.from("perfiles").insert([{
+                id: sesionNueva.user.id,
+                nombre_completo: meta.nombre_completo || sesionNueva.user.email.split('@')[0],
+                cedula: meta.cedula || `AUTO-${Date.now()}`,
+                rol: meta.rol || "ciudadano",
+                id_entidad: meta.id_entidad || null,
+                especialidad: meta.especialidad || "general"
+              }]);
+              
+              if (!insertError) {
+                perfilActual = await fetchProfileByUserId(sesionNueva.user.id);
+              }
+            }
+            
+            setPerfil(perfilActual);
+            if (perfilActual) localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+          } catch (err) {
+            console.error("Error en login/perfil:", err);
+            setPerfil(null);
+          }
         }
       },
       async logout() {

@@ -5,7 +5,7 @@ export async function fetchProfileByUserId(usuarioId) {
     .from("perfiles")
     .select("id,cedula,nombre_completo,rol,id_entidad,especialidad,activo,creado_el")
     .eq("id", usuarioId)
-    .single();
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
   return data;
