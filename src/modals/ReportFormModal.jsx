@@ -4,6 +4,7 @@ import { uploadFile } from "../services/storageService";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { supabase } from "../core/supabaseClient";
 
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -31,7 +32,7 @@ function LocationMarker({ position, setPosition, onFix }) {
 const FORMULARIO_VACIO = { 
   titulo: "", 
   descripcion: "", 
-  categoria: "Bache", 
+  problematica_id: "", 
   url_imagen: "", 
   lat: "", 
   lng: "",
@@ -49,6 +50,7 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
   const [mapPosition, setMapPosition] = useState(null);
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [ubicacionFijada, setUbicacionFijada] = useState(false);
+  const [problematicas, setProblematicas] = useState([]);
   
   const fileInputRef = useRef(null);
 
@@ -62,7 +64,7 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
     setFormulario({
       titulo: reporteInicial.titulo || "",
       descripcion: reporteInicial.descripcion || "",
-      categoria: reporteInicial.categoria || "Bache",
+      problematica_id: reporteInicial.problematica_id || "",
       url_imagen: reporteInicial.url_imagen || "",
       lat: reporteInicial.lat ?? "",
       lng: reporteInicial.lng ?? "",
@@ -86,6 +88,19 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
     }
   }, [mapPosition]);
 
+  useEffect(() => {
+    async function loadProblematicas() {
+      const { data } = await supabase.from('problematicas').select('*');
+      if (data) {
+        setProblematicas(data);
+        if (data.length > 0 && formulario.problematica_id === "") {
+          setFormulario(prev => ({ ...prev, problematica_id: data[0].id }));
+        }
+      }
+    }
+    loadProblematicas();
+  }, []);
+
   if (!abierto) return null;
 
   const manejarCambio = (e) => {
@@ -102,7 +117,7 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
     if (!file) return;
     setSubiendoImagen(true);
     try {
-      const url = await uploadFile("evidencias", file);
+      const url = await uploadFile("fotos", file);
       setFormulario(prev => ({ ...prev, url_imagen: url }));
     } catch (err) {
       alert("Error subiendo imagen: " + err.message);
@@ -196,18 +211,24 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
           <div className="input-group">
             <span className="label-premium" style={{ display: 'block', marginBottom: '12px', fontWeight: '800', color: '#1e293b', fontSize: '0.9rem' }}>Categoría del Reporte *</span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem' }}>
-              {CATEGORIAS_REPORTE.map(cat => (
+              {problematicas.length === 0 ? <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Cargando categorías...</p> : null}
+              {problematicas.map(prob => (
                 <button 
-                  key={cat} 
+                  key={prob.id} 
                   type="button" 
-                  onClick={() => setFormulario(p => ({...p, categoria: cat}))}
+                  onClick={() => setFormulario(p => ({...p, problematica_id: prob.id}))}
                   style={{ 
                     padding: '12px', borderRadius: '14px', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s',
-                    background: formulario.categoria === cat ? '#2563eb' : '#fff',
-                    color: formulario.categoria === cat ? '#fff' : '#64748b',
-                    border: formulario.categoria === cat ? '1px solid #2563eb' : '1px solid #e2e8f0'
+                    background: formulario.problematica_id === prob.id ? '#2563eb' : '#fff',
+                    color: formulario.problematica_id === prob.id ? '#fff' : '#64748b',
+                    border: formulario.problematica_id === prob.id ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                   }}
-                >{cat}</button>
+                  title={prob.descripcion}
+                >
+                  <span style={{ fontSize: '1.2rem' }}>{prob.icono || "📋"}</span>
+                  {prob.nombre}
+                </button>
               ))}
             </div>
           </div>
@@ -227,43 +248,47 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
                 type="button" 
                 disabled={calibrandoGps} 
                 onClick={() => {
-                  if ("geolocation" in navigator) {
-                    setCalibrandoGps(true);
-                    setError("");
-                    
-                    const onSuccess = (pos) => {
-                      setMapPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                      setUbicacionFijada(true);
-                      setCalibrandoGps(false);
-                      setError("");
-                    };
-                    
-                    const ipFallback = () => {
-                      setError("GPS no respondió. Buscando por red...");
-                      fetch("https://ipapi.co/json/")
-                        .then(res => res.json())
-                        .then(data => {
-                          if (data.latitude && data.longitude) {
-                            setMapPosition({ lat: data.latitude, lng: data.longitude });
-                            setUbicacionFijada(true);
-                            setError("");
-                          } else {
-                            setError("No pudimos encontrarte. Marca tu ubicación en el mapa.");
-                          }
-                        })
-                        .catch(() => setError("No pudimos encontrarte. Marca tu ubicación en el mapa."))
-                        .finally(() => setCalibrandoGps(false));
-                    };
-                    
-                    // Intentar GPS de alta precisión primero
-                    navigator.geolocation.getCurrentPosition(onSuccess, (highAccErr) => {
-                      // Si falla high accuracy, intentar sin ella
-                      navigator.geolocation.getCurrentPosition(onSuccess, (lowAccErr) => {
-                        // Si ambos fallan, ir a IP
-                        ipFallback();
-                      }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
-                    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+                  if (!navigator.geolocation) {
+                    setError("Tu navegador no soporta geolocalización.");
+                    return;
                   }
+                  
+                  setCalibrandoGps(true);
+                  setError("");
+                  
+                  const onSuccess = (pos) => {
+                    setMapPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    setUbicacionFijada(true);
+                    setCalibrandoGps(false);
+                    setError("");
+                  };
+                  
+                  const fallbackToManual = () => {
+                    setError("Tu sistema Windows no nos devolvió coordenadas. Por favor, marca tu ubicación exacta tocando el mapa.");
+                    setCalibrandoGps(false);
+                  };
+
+                  const onError = (err) => {
+                    console.warn("GPS Error Principal:", err);
+                    if (err.code === 1) {
+                      setError("Permiso de GPS denegado. Por favor, marca tu ubicación en el mapa manualmente.");
+                      setCalibrandoGps(false);
+                      return;
+                    }
+                    
+                    // Reintento relajado (esencial para Laptops que carecen de GPS físico y usan triangulación Wi-Fi)
+                    navigator.geolocation.getCurrentPosition(onSuccess, (err2) => {
+                      console.warn("GPS Error Secundario:", err2);
+                      fallbackToManual();
+                    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: Infinity });
+                  };
+                  
+                  // Invocación estándar de geolocalización de alta precisión
+                  navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: Infinity // Permite usar la última lectura conocida (Evita el timeout en Desktop)
+                  });
                 }} 
                 style={{ 
                   color: '#2563eb', fontWeight: '800', background: '#eff6ff', border: 'none', 
