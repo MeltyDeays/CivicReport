@@ -2,37 +2,40 @@ import { supabase } from "../../../core/supabaseClient";
 
 export const adminEntidadReportesModel = {
   async listar(entidadId) {
-    let query = supabase
-      .from("denuncias")
-      .select("id,entidad_id,titulo,descripcion,estado,prioridad,categoria,url_imagen,direccion,departamento,municipio,ubicacion,creado_el,actualizado_el");
-
-    if (entidadId) {
-      // Obtener la categoría de la entidad para mapeo inteligente
-      const { data: entidadInfo } = await supabase
-        .from("entidades_admin")
-        .select("nombre, categoria")
-        .eq("id", entidadId)
-        .single();
-
-      const categoriaEntidad = entidadInfo?.categoria || "";
-      
-      // Mapeo: categoría de entidad → categorías de denuncia que atiende
-      const MAPA_CATEGORIAS = {
-        "Energía": ["Alumbrado"],
-        "Agua": ["Drenaje"],
-        "Vialidad": ["Bache", "Semaforo", "Puente"],
-      };
-
-      const categoriasCompatibles = MAPA_CATEGORIAS[categoriaEntidad] || [];
-
-      if (categoriasCompatibles.length > 0) {
-        query = query.or(`entidad_id.eq.${entidadId},categoria.in.(${categoriasCompatibles.join(',')})`);
-      } else {
-        query = query.eq("entidad_id", entidadId);
-      }
+    if (!entidadId) {
+      return { data: [], error: { message: "Entidad no especificada" } };
     }
 
-    const { data, error } = await query.order("creado_el", { ascending: false });
-    return { data, error };
+    const { data: vinculos, error: errorVinculos } = await supabase
+      .from("entidad_problematica")
+      .select("problematica_id")
+      .eq("entidad_id", entidadId);
+
+    if (errorVinculos) {
+      return { data: [], error: errorVinculos };
+    }
+
+    const problematicasIds = vinculos.map(v => v.problematica_id);
+
+    if (problematicasIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+      .from("denuncias")
+      .select(`
+        id,entidad_id,titulo,descripcion,estado,prioridad,categoria,url_imagen,direccion,departamento,municipio,ubicacion,creado_el,actualizado_el,problematica_id,es_visible,
+        problematica:problematicas(id,nombre,icono),
+        firmas:firmas(count)
+      `)
+      .in("problematica_id", problematicasIds)
+      .order("creado_el", { ascending: false });
+
+    const normalizedData = (data || []).map(r => ({
+      ...r,
+      firmas: Array.isArray(r.firmas) ? r.firmas[0]?.count || 0 : Number(r.firmas) || 0
+    }));
+
+    return { data: normalizedData, error };
   },
 };
