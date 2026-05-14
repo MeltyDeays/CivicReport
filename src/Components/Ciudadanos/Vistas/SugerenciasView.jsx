@@ -103,7 +103,7 @@ export default function CiudadanoSugerenciasView() {
       </div>
 
       {/* Mini Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>💡</div>
           <div style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>{stats.sugerencias}</div>

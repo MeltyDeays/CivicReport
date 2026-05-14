@@ -8,7 +8,7 @@ import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
 import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 
 export default function CiudadanoReportesView() {
-  const { vincularCodigoTecnico } = useAuth();
+  const { vincularCodigoTecnico, sesion } = useAuth();
   const { reportes, meta, crear, actualizar, eliminar, actualizarFirmaLocal } = useDenunciasCiudadano();
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
@@ -22,14 +22,27 @@ export default function CiudadanoReportesView() {
   const [denunciaPago, setDenunciaPago] = useState(null);
 
   const reportesFiltrados = useMemo(() => {
+    const ahora = Date.now();
+    const OCHO_HORAS_MS = 8 * 60 * 60 * 1000;
+
     return reportes.filter((item) => {
+      // 1. Visibilidad manual (H017)
+      const esDuenio = item.id_ciudadano === sesion?.user?.id;
+      if (!esDuenio && item.es_visible === false) return false;
+
+      // 2. Auto-ocultado automático (Completados > 8h)
+      if (item.estado === 'completado' && item.actualizado_el) {
+        const tiempoTranscurrido = ahora - new Date(item.actualizado_el).getTime();
+        if (tiempoTranscurrido > OCHO_HORAS_MS) return false;
+      }
+
       const coincideBusqueda = item.titulo.toLowerCase().includes(busqueda.toLowerCase());
       const coincideEstado = filtroEstado === "todos" || item.estado === filtroEstado;
       const coincideDep = filtroDep === "todos" || item.departamento === filtroDep;
       const coincideUrgencia = filtroUrgencia === "todos" || item.urgencia === filtroUrgencia;
       return coincideBusqueda && coincideEstado && coincideDep && coincideUrgencia;
     });
-  }, [reportes, busqueda, filtroEstado, filtroDep, filtroUrgencia]);
+  }, [reportes, busqueda, filtroEstado, filtroDep, filtroUrgencia, sesion?.user?.id]);
 
   const estadisticas = useMemo(() => {
     const total = reportes.length;
@@ -136,7 +149,7 @@ export default function CiudadanoReportesView() {
       </div>
 
       {/* Grid de Estadísticas con Estilo del Diseño */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '16px', border: '1px solid #eef2f6', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
           <div style={{ color: '#0f172a', fontSize: '2rem', fontWeight: '800' }}>{estadisticas.total}</div>
           <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.9rem', marginTop: '4px' }}>Total Reportes</div>
@@ -246,7 +259,7 @@ export default function CiudadanoReportesView() {
             <div style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <span style={{ fontSize: '1.2rem' }}>
-                  {{ Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋' }[item.categoria] || '📋'}
+                  {item.problematica?.icono || ({ Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋' }[item.categoria] || '📋')}
                 </span>
                 <span style={{ color: '#64748b', fontWeight: '700', fontSize: '0.85rem', textTransform: 'uppercase' }}>{item.categoria}</span>
               </div>
@@ -279,6 +292,11 @@ export default function CiudadanoReportesView() {
         alEditar={abrirEditar}
         alEliminar={borrarReporte}
         alCambiarFirma={actualizarFirmaLocal}
+        alPagar={(rep) => {
+          setReporteSeleccionado(null);
+          setDenunciaPago(rep);
+        }}
+        usuarioId={sesion?.user?.id}
       />
       <ModalFormularioReporte
         abierto={modalFormularioAbierto}

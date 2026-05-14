@@ -146,13 +146,44 @@ export default function ModalSugerencia({ estaAbierto, alCerrar, alEnviar }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
               <span className="label-premium">Ubicación en el Mapa</span>
               <button type="button" className="ghost-btn" disabled={calibrandoGps} onClick={() => {
-                if ("geolocation" in navigator) {
-                  setCalibrandoGps(true);
-                  navigator.geolocation.getCurrentPosition(pos => {
-                    setMapPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                    setCalibrandoGps(false);
-                  }, () => setCalibrandoGps(false));
+                if (!navigator.geolocation) {
+                  setError("Tu navegador no soporta geolocalización.");
+                  return;
                 }
+                setCalibrandoGps(true);
+                setError("");
+                
+                const onSuccess = (pos) => {
+                  setMapPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                  setCalibrandoGps(false);
+                  setError("");
+                };
+                
+                const fallbackToManual = () => {
+                  setError("Tu sistema Windows no nos devolvió coordenadas. Por favor, marca tu ubicación exacta tocando el mapa.");
+                  setCalibrandoGps(false);
+                };
+
+                const onError = (err) => {
+                  console.warn("GPS Error Principal:", err);
+                  if (err.code === 1) {
+                    setError("Permiso denegado. Marca el lugar en el mapa.");
+                    setCalibrandoGps(false);
+                    return;
+                  }
+                  
+                  // Reintento relajado (esencial para Laptops que carecen de GPS físico y usan triangulación Wi-Fi)
+                  navigator.geolocation.getCurrentPosition(onSuccess, (err2) => {
+                    console.warn("GPS Error Secundario:", err2);
+                    fallbackToManual();
+                  }, { enableHighAccuracy: false, timeout: 15000, maximumAge: Infinity });
+                };
+
+                navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+                  enableHighAccuracy: true,
+                  timeout: 20000,
+                  maximumAge: Infinity
+                });
               }} style={{ color: '#1f64ff', fontWeight: 'bold', height: '32px' }}>
                 {calibrandoGps ? "Localizando..." : "📍 Usar ubicación"}
               </button>
