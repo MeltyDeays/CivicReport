@@ -133,3 +133,67 @@ export async function estaEnTablero(idDenuncia) {
 
   return !!data;
 }
+
+export async function asignarResponsable(idDenuncia, idTecnico) {
+  const { error } = await supabase
+    .from(TABLA_KANBAN)
+    .update({ id_responsable: idTecnico || null })
+    .eq("id_denuncia", idDenuncia);
+
+  if (error) throw new Error(`No se pudo asignar responsable: ${error.message}`);
+}
+
+export async function asignarCuadrilla(idDenuncia, idCuadrilla) {
+  const { error } = await supabase
+    .from(TABLA_KANBAN)
+    .update({ id_cuadrilla_asignada: idCuadrilla || null })
+    .eq("id_denuncia", idDenuncia);
+
+  if (error) throw new Error(`No se pudo asignar cuadrilla: ${error.message}`);
+
+  if (idCuadrilla) {
+    const { data: cuadrilla } = await supabase
+      .from("cuadrillas_base")
+      .select("id_lider")
+      .eq("id", idCuadrilla)
+      .maybeSingle();
+
+    if (cuadrilla) {
+      const { data: miembros } = await supabase
+        .from("cuadrilla_miembros")
+        .select("id_empleado")
+        .eq("id_cuadrilla", idCuadrilla);
+
+      const ayudantes = (miembros || []).map(m => m.id_empleado);
+      const encargado = cuadrilla.id_lider;
+      const ayudante = ayudantes[0] || encargado;
+
+      const { data: existente } = await supabase
+        .from("cuadrilla_obra")
+        .select("id")
+        .eq("id_denuncia", idDenuncia)
+        .maybeSingle();
+
+      if (existente) {
+        await supabase
+          .from("cuadrilla_obra")
+          .update({ id_tecnico_encargado: encargado, id_tecnico_ayudante: ayudante })
+          .eq("id_denuncia", idDenuncia);
+      } else {
+        await supabase
+          .from("cuadrilla_obra")
+          .insert([{ id_denuncia: idDenuncia, id_tecnico_encargado: encargado, id_tecnico_ayudante: ayudante }]);
+      }
+    }
+  }
+}
+
+export async function obtenerTareaDetalle(idDenuncia) {
+  const { data } = await supabase
+    .from(TABLA_KANBAN)
+    .select("id_responsable, id_cuadrilla_asignada")
+    .eq("id_denuncia", idDenuncia)
+    .maybeSingle();
+
+  return data || { id_responsable: null, id_cuadrilla_asignada: null };
+}

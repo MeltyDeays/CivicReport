@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { COLUMNAS_KANBAN, DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 import { useKanbanAdmin } from "../Controladores/useKanbanAdmin";
 import { formatearFecha } from "../../../utils/formatters";
@@ -164,11 +164,11 @@ export default function AdminEntidadKanbanView() {
                     const progreso = column.id === 0 ? 0 : column.id === 1 ? Math.floor(Math.random() * 50 + 30) : 100;
 
                     return (
-                      <article key={item.id} style={{
+                      <article key={item.id} onClick={() => vm.abrirDetalleTarea(item)} style={{
                         background: '#fff', borderRadius: '14px',
                         border: '1px solid #e2e8f0', overflow: 'hidden',
                         opacity: isMoving ? 0.5 : 1, transition: 'all 0.2s',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)', cursor: 'pointer'
                       }}>
                         {/* Card Image */}
                         <div style={{ position: 'relative', height: '140px', overflow: 'hidden', background: '#e2e8f0' }}>
@@ -271,7 +271,7 @@ export default function AdminEntidadKanbanView() {
                           </div>
 
                           {/* Action Buttons */}
-                          <div style={{
+                          <div onClick={e => e.stopPropagation()} style={{
                             display: 'flex', gap: '6px', marginTop: '12px',
                             borderTop: '1px solid #f1f5f9', paddingTop: '12px'
                           }}>
@@ -448,6 +448,82 @@ export default function AdminEntidadKanbanView() {
           </div>
         </div>
       )}
+
+      {vm.tareaSeleccionada && <ModalAsignacion vm={vm} />}
     </section>
+  );
+}
+
+function ModalAsignacion({ vm }) {
+  const tarea = vm.tareaSeleccionada;
+  const [responsable, setResponsable] = useState(vm.detalleAsignacion.id_responsable || "");
+  const [cuadrilla, setCuadrilla] = useState(vm.detalleAsignacion.id_cuadrilla_asignada || "");
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    setResponsable(vm.detalleAsignacion.id_responsable || "");
+    setCuadrilla(vm.detalleAsignacion.id_cuadrilla_asignada || "");
+  }, [vm.detalleAsignacion]);
+
+  const guardar = async () => {
+    try {
+      await vm.guardarAsignacion(tarea.id, responsable || null, cuadrilla || null);
+      setMsg("✅ Asignación guardada");
+      setTimeout(() => vm.cerrarDetalleTarea(), 800);
+    } catch (e) {
+      setMsg("❌ " + e.message);
+    }
+  };
+
+  const prio = PRIORIDAD_ESTILOS[tarea.prioridad] || PRIORIDAD_ESTILOS.media;
+
+  return (
+    <div onClick={() => vm.cerrarDetalleTarea()} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '2rem' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '24px', width: 'min(560px, 95%)', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1.5rem 2rem', color: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+            <div>
+              <span style={{ background: prio.bg, color: prio.color, padding: '3px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '800' }}>{prio.label}</span>
+              <h2 style={{ margin: '10px 0 0', fontSize: '1.2rem', fontWeight: '800' }}>{tarea.titulo}</h2>
+              <p style={{ margin: '6px 0 0', opacity: 0.7, fontSize: '0.85rem' }}>📍 {tarea.municipio}, {tarea.departamento}</p>
+            </div>
+            <button onClick={() => vm.cerrarDetalleTarea()} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          </div>
+        </div>
+
+        <div style={{ padding: '2rem' }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: '0.9rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>Asignar Personal</h3>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#64748b', marginBottom: '6px' }}>Técnico Responsable Individual</label>
+            <select value={responsable} onChange={e => setResponsable(e.target.value)} style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem' }}>
+              <option value="">Sin asignar</option>
+              {vm.tecnicosEntidad.map(t => (
+                <option key={t.id} value={t.id}>{t.nombre_completo} ({t.especialidad})</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#64748b', marginBottom: '6px' }}>Cuadrilla Asignada</label>
+            <select value={cuadrilla} onChange={e => setCuadrilla(e.target.value)} style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem' }}>
+              <option value="">Sin cuadrilla</option>
+              {vm.cuadrillasEntidad.map(c => (
+                <option key={c.id} value={c.id}>{c.nombre} — Líder: {c.perfiles?.nombre_completo || 'N/A'}</option>
+              ))}
+            </select>
+          </div>
+
+          {msg && <div style={{ padding: '10px', borderRadius: '10px', background: msg.startsWith('✅') ? '#ecfdf5' : '#fef2f2', color: msg.startsWith('✅') ? '#10b981' : '#ef4444', fontWeight: '700', fontSize: '0.85rem', marginBottom: '1rem', textAlign: 'center' }}>{msg}</div>}
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={() => vm.cerrarDetalleTarea()} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>Cancelar</button>
+            <button onClick={guardar} disabled={vm.guardandoAsignacion} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', background: '#1e293b', color: '#fff', fontWeight: '800', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+              {vm.guardandoAsignacion ? 'Guardando...' : '💾 Guardar Asignación'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

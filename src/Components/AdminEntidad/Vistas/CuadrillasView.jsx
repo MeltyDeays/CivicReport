@@ -154,16 +154,56 @@ export default function CuadrillasView() {
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Capitán de Cuadrilla</label>
-                <select style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: '600' }} value={liderId} onChange={e => setLiderId(e.target.value)} required>
+                <select style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: '600' }} value={liderId} onChange={e => { setLiderId(e.target.value); setSeleccionados(prev => prev.filter(id => id !== e.target.value)); }} required>
                   <option value="">Seleccionar líder...</option>
-                  {tecnicos.map(t => (
+                  {tecnicos.filter(t => t.activo !== false).map(t => (
                     <option key={t.id} value={t.id}>{EMOJIS_ESPECIALIDAD[t.especialidad]} {t.nombre_completo}</option>
                   ))}
                 </select>
               </div>
 
+              {liderId && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    Miembros ({seleccionados.length}/{tamanoMaximo - 1} máx.)
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px', background: '#f8fafc', padding: '1rem', borderRadius: '14px', border: '1px solid #e2e8f0', maxHeight: '240px', overflowY: 'auto' }}>
+                    {tecnicos.filter(t => t.id !== liderId && t.activo !== false).map(t => {
+                      const checked = seleccionados.includes(t.id);
+                      const disabled = !checked && seleccionados.length >= tamanoMaximo - 1;
+                      return (
+                        <label key={t.id} style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '10px 12px', borderRadius: '12px', cursor: disabled ? 'not-allowed' : 'pointer',
+                          background: checked ? '#eff6ff' : '#fff', border: `1px solid ${checked ? '#3b82f6' : '#e2e8f0'}`,
+                          opacity: disabled ? 0.5 : 1, transition: 'all 0.15s'
+                        }}>
+                          <input type="checkbox" checked={checked} disabled={disabled} onChange={() => {
+                            setSeleccionados(prev => checked ? prev.filter(id => id !== t.id) : [...prev, t.id]);
+                          }} style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }} />
+                          <span style={{ fontSize: '1.1rem' }}>{EMOJIS_ESPECIALIDAD[t.especialidad]}</span>
+                          <span style={{ fontWeight: '600', color: '#334155', fontSize: '0.85rem' }}>{t.nombre_completo}</span>
+                        </label>
+                      );
+                    })}
+                    {tecnicos.filter(t => t.id !== liderId && t.activo !== false).length === 0 && (
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '600', gridColumn: '1 / -1', textAlign: 'center', padding: '1rem' }}>No hay más técnicos disponibles. Genera invitaciones para reclutar.</p>
+                    )}
+                  </div>
+                  {Object.keys(balance).length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                      {Object.entries(balance).map(([esp, count]) => (
+                        <span key={esp} style={{ background: '#f1f5f9', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#475569' }}>
+                          {EMOJIS_ESPECIALIDAD[esp]} {NOMBRES_ESPECIALIDAD[esp]}: {count}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button type="submit" disabled={enviando} style={{ width: '100%', background: '#1e293b', color: '#fff', border: 'none', padding: '16px', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}>
-                {enviando ? "Consolidando..." : "Consolidar Escuadrón Táctico"}
+                {enviando ? "Consolidando..." : `Consolidar Escuadrón Táctico (${1 + seleccionados.length} miembros)`}
               </button>
             </form>
           )}
@@ -178,13 +218,33 @@ export default function CuadrillasView() {
                   </span>
                 </div>
 
-                <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '1rem', marginBottom: '1rem' }}>
                   <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Capitán</div>
                   <div style={{ fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '1.2rem' }}>{EMOJIS_ESPECIALIDAD[c.perfiles?.especialidad] || '🛠️'}</span>
                     {c.perfiles?.nombre_completo}
                   </div>
                 </div>
+
+                {c.cuadrilla_miembros && c.cuadrilla_miembros.length > 0 && (
+                  <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>Miembros ({c.cuadrilla_miembros.length})</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {c.cuadrilla_miembros.map((m, i) => (
+                        <div key={i} style={{ fontWeight: '600', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                          <span>{EMOJIS_ESPECIALIDAD[m.perfiles?.especialidad] || '🛠️'}</span>
+                          {m.perfiles?.nombre_completo || 'Técnico'}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(!c.cuadrilla_miembros || c.cuadrilla_miembros.length === 0) && (
+                  <div style={{ background: '#fffbeb', borderRadius: '12px', padding: '10px', marginBottom: '1.5rem', fontSize: '0.8rem', color: '#d97706', fontWeight: '600', textAlign: 'center' }}>
+                    Sin miembros asignados
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => alternarEstado(c.id, !c.activa)} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: '700', cursor: 'pointer' }}>
