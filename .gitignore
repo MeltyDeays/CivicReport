@@ -30,3 +30,19 @@ dist-ssr
 # Config/Env variables
 .env
 .env.*
+
+# Supabase
+supabase/
+repomix-output.xml
+repomix-output.txt
+.repomixignore
+CLAUDE.md
+.claudeignore
+repomix.config.ts
+.rtk/
+database/
+trello_reference.py
+
+tableau_data/
+
+datos_tableau_civicreport.csv
