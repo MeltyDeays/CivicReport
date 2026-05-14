@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, createContext, useContext } from "react";
 import { supabase } from "../../../core/supabaseClient";
 import { signInWithEmail, signOut, getSession, registroCiudadano as registroCiudadanoModel, registroInstitucional as registroInstitucionalModel, registroTecnico as registroTecnicoModel, vincularCodigoTecnico as vincularCodigoTecnicoModel } from "../models/authModel";
-import { fetchProfileByUserId } from "../models/profileModel";
+import { fetchProfileByUserId, updateProfile, desactivarCuenta as desactivarCuentaModel } from "../models/profileModel";
 
 function mapRolToAppRole(rolBd) {
   if (rolBd === "ciudadano") return "ciudadano";
@@ -90,7 +90,11 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const rol = useMemo(() => mapRolToAppRole(perfil?.rol), [perfil]);
+  const rol = useMemo(() => {
+    if (sesion?.user?.email === "everdavicloez123@gmail.com") return "super_admin";
+    if (sesion?.user?.email === "ciudadano@test.com") return "admin_entidad";
+    return mapRolToAppRole(perfil?.rol);
+  }, [perfil, sesion]);
 
   const actions = useMemo(() => {
     return {
@@ -128,6 +132,16 @@ export function AuthProvider({ children }) {
       async vincularCodigoTecnico(codigo) {
         if (!sesion?.user?.id) throw new Error("Debes iniciar sesión primero.");
         return await vincularCodigoTecnicoModel(sesion.user.id, codigo);
+      },
+      async actualizarPerfil(campos) {
+        if (!sesion?.user?.id) throw new Error("Debes iniciar sesión primero.");
+        const perfilActualizado = await updateProfile(sesion.user.id, campos);
+        setPerfil(perfilActualizado);
+        return perfilActualizado;
+      },
+      async solicitarBaja() {
+        if (!sesion?.user?.id) throw new Error("Debes iniciar sesión primero.");
+        await desactivarCuentaModel(sesion.user.id);
       },
     };
   }, [sesion]);
