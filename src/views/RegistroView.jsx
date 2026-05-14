@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WebGLShader } from "../Components/ui/web-gl-shader";
 
 /**
  * Vista de Registro — H001 (Ciudadano) + H022 (Institucional)
@@ -83,12 +84,11 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      position: 'relative',
+      overflow: 'hidden',
       fontFamily: "'Inter', sans-serif"
     }}>
-      {/* Círculos decorativos de fondo */}
-      <div style={{ position: 'absolute', top: '10%', left: '15%', width: '300px', height: '300px', background: '#3b82f6', borderRadius: '50%', filter: 'blur(100px)', opacity: 0.2 }}></div>
-      <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: '400px', height: '400px', background: '#8b5cf6', borderRadius: '50%', filter: 'blur(120px)', opacity: 0.2 }}></div>
+      <WebGLShader />
 
       <div style={{
         position: 'relative',

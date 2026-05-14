@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WebGLShader } from "../Components/ui/web-gl-shader";
 
 export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alIrRegistro }) {
   const [email, setEmail] = useState("");
@@ -22,7 +23,7 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
 
   return (
     <div className="login-page-container">
-      <div className="login-backdrop"></div>
+      <WebGLShader />
       
       <div className="login-glass-card">
         <header className="login-header">
@@ -105,12 +106,7 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
         }
 
         .login-backdrop {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.2) 0%, transparent 50%),
-                      radial-gradient(circle at 100% 100%, rgba(29, 78, 216, 0.2) 0%, transparent 50%);
-          z-index: 1;
+          display: none;
         }
 
         .login-glass-card {
