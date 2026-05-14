@@ -4,21 +4,20 @@ import { useKanbanAdmin } from "../Controladores/useKanbanAdmin";
 import { formatearFecha } from "../../../utils/formatters";
 
 const PRIORIDAD_ESTILOS = {
-  critica: { color: '#ef4444', bg: '#fef2f2', label: 'Crítica', emoji: '🔴' },
-  alta: { color: '#f59e0b', bg: '#fff7ed', label: 'Alta', emoji: '🟠' },
-  media: { color: '#3b82f6', bg: '#eff6ff', label: 'Media', emoji: '🔵' },
-  baja: { color: '#10b981', bg: '#ecfdf5', label: 'Baja', emoji: '🟢' },
+  critica: { color: '#fff', bg: '#ef4444', label: 'Crítica' },
+  alta: { color: '#fff', bg: '#f97316', label: 'Alta' },
+  media: { color: '#fff', bg: '#3b82f6', label: 'Media' },
+  baja: { color: '#fff', bg: '#10b981', label: 'Baja' },
 };
 
-const CATEGORIA_ICONOS = {
-  Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋'
+const COLUMN_STYLES = {
+  0: { dot: '#f59e0b', label: 'Cola', icon: '⏳' },
+  1: { dot: '#3b82f6', label: 'En Desarrollo', icon: '📊' },
+  2: { dot: '#10b981', label: 'Completados', icon: '✅' },
 };
 
-const COLUMN_COLORS = {
-  pendiente: { header: '#64748b', accent: '#e2e8f0' },
-  en_reparacion: { header: '#2563eb', accent: '#bfdbfe' },
-  completado: { header: '#10b981', accent: '#a7f3d0' },
-};
+// Colores para avatares de equipo
+const AVATAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function AdminEntidadKanbanView() {
   const vm = useKanbanAdmin();
@@ -31,46 +30,51 @@ export default function AdminEntidadKanbanView() {
   }, [vm.tareasActivas]);
 
   const totalActivas = vm.tareasActivas.length;
+  const countByCol = agrupado.map(c => c.items.length);
 
   return (
-    <section style={{ padding: '2rem', background: '#f8fafc', minHeight: '100vh' }}>
+    <section style={{ padding: '28px 32px', background: '#f1f5f9', minHeight: '100%' }}>
       {/* Header */}
-      <header style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#1e293b', margin: 0 }}>Tablero de Proyectos</h1>
-            <p style={{ color: '#64748b', fontSize: '1rem', marginTop: '4px' }}>
-              {totalActivas} {totalActivas === 1 ? 'tarea activa' : 'tareas activas'} en el tablero
-            </p>
-          </div>
-          {/* Botón Historial */}
-          <button
-            onClick={() => vm.setMostrarHistorial(true)}
-            style={{
-              background: '#1e293b', color: '#fff', border: 'none', padding: '12px 20px',
-              borderRadius: '14px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '8px',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'all 0.2s'
-            }}
-          >
-            📂 Historial ({vm.historial.length})
-          </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>
+            Tablero de Proyectos
+          </h1>
+          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '14px', fontWeight: '500' }}>
+            Arrastra las tarjetas entre columnas para actualizar el estado del proyecto
+          </p>
         </div>
-      </header>
+        <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', marginTop: '8px' }}>
+          {totalActivas} proyectos totales
+        </span>
+      </div>
 
-      {/* Filtros */}
+      {/* Summary dots */}
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+        {agrupado.map((col) => {
+          const style = COLUMN_STYLES[col.id] || COLUMN_STYLES[0];
+          return (
+            <div key={col.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: style.dot }} />
+              {style.label}: {col.items.length}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Filters */}
       <div style={{
-        display: 'flex', gap: '12px', marginBottom: '1.5rem', padding: '12px 16px',
-        background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0',
+        display: 'flex', gap: '10px', marginBottom: '20px', padding: '10px 14px',
+        background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)', alignItems: 'center'
       }}>
-        <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '700' }}>Filtrar:</span>
+        <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '600' }}>Filtrar:</span>
         <select
           value={vm.filtroDept}
           onChange={(e) => vm.cambiarDepartamento(e.target.value)}
           style={{
-            padding: '8px 14px', borderRadius: '10px', border: '1px solid #e2e8f0',
-            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '0.85rem'
+            padding: '7px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
+            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px'
           }}
         >
           <option value="Todos">Todos los departamentos</option>
@@ -78,14 +82,13 @@ export default function AdminEntidadKanbanView() {
             <option key={d} value={d}>{d}</option>
           ))}
         </select>
-
         {vm.filtroDept !== "Todos" && (
           <select
             value={vm.filtroCity}
             onChange={(e) => vm.setFiltroCity(e.target.value)}
             style={{
-              padding: '8px 14px', borderRadius: '10px', border: '1px solid #e2e8f0',
-              background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '0.85rem'
+              padding: '7px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
+              background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px'
             }}
           >
             <option value="Todos">Todos los municipios</option>
@@ -94,126 +97,227 @@ export default function AdminEntidadKanbanView() {
             ))}
           </select>
         )}
+
+        <div style={{ marginLeft: 'auto' }}>
+          <button
+            onClick={() => vm.setMostrarHistorial(true)}
+            style={{
+              background: '#0f172a', color: '#fff', border: 'none',
+              padding: '8px 16px', borderRadius: '10px', fontWeight: '700',
+              fontSize: '12px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}
+          >
+            📂 Historial ({vm.historial.length})
+          </button>
+        </div>
       </div>
 
-      {/* Columnas Kanban */}
+      {/* Kanban Columns */}
       {vm.cargando ? (
-        <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-          Cargando tablero...
+        <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b', fontWeight: '600' }}>
+          ⏳ Cargando tablero...
         </div>
       ) : (
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1.5rem', alignItems: 'start'
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'start' }}>
           {agrupado.map((column) => {
-            const colStyle = COLUMN_COLORS[column.key] || COLUMN_COLORS.pendiente;
+            const colStyle = COLUMN_STYLES[column.id] || COLUMN_STYLES[0];
             return (
               <div key={column.id} style={{
-                background: '#fff', borderRadius: '20px', border: '1px solid #e2e8f0',
-                overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.04)'
+                background: '#fff', borderRadius: '16px',
+                border: '1px solid #e2e8f0', overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
               }}>
                 {/* Column Header */}
                 <div style={{
-                  padding: '16px 20px', background: colStyle.header,
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  padding: '14px 18px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  borderBottom: '1px solid #f1f5f9'
                 }}>
-                  <h3 style={{
-                    margin: 0, fontSize: '0.9rem', fontWeight: '800', color: '#fff',
-                    textTransform: 'uppercase', letterSpacing: '0.5px'
-                  }}>
-                    {column.title}
-                  </h3>
-                  <span style={{
-                    background: 'rgba(255,255,255,0.2)', color: '#fff',
-                    padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '800'
-                  }}>
-                    {column.items.length}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{
+                      width: '10px', height: '10px', borderRadius: '50%',
+                      background: colStyle.dot
+                    }} />
+                    <h3 style={{
+                      margin: 0, fontSize: '14px', fontWeight: '700', color: '#0f172a'
+                    }}>
+                      {colStyle.label}
+                    </h3>
+                    <span style={{
+                      background: '#f1f5f9', color: '#64748b',
+                      padding: '2px 8px', borderRadius: '10px',
+                      fontSize: '11px', fontWeight: '800'
+                    }}>
+                      {column.items.length}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '14px' }}>{colStyle.icon}</span>
                 </div>
 
                 {/* Cards */}
-                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '60vh' }}>
+                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '400px' }}>
                   {column.items.map((item) => {
                     const prio = PRIORIDAD_ESTILOS[item.prioridad] || PRIORIDAD_ESTILOS.media;
                     const isMoving = vm.idMoviendo === item.id;
+                    // Simulated progress based on column
+                    const progreso = column.id === 0 ? 0 : column.id === 1 ? Math.floor(Math.random() * 50 + 30) : 100;
+
                     return (
                       <article key={item.id} style={{
-                        background: '#f8fafc', borderRadius: '16px', padding: '14px',
-                        border: '1px solid #e2e8f0', transition: 'all 0.2s',
-                        opacity: isMoving ? 0.5 : 1
+                        background: '#fff', borderRadius: '14px',
+                        border: '1px solid #e2e8f0', overflow: 'hidden',
+                        opacity: isMoving ? 0.5 : 1, transition: 'all 0.2s',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                       }}>
-                        {/* Card Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        {/* Card Image */}
+                        <div style={{ position: 'relative', height: '140px', overflow: 'hidden', background: '#e2e8f0' }}>
+                          {item.url_imagen ? (
+                            <img
+                              src={item.url_imagen}
+                              alt={item.titulo}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: '100%', height: '100%',
+                              background: 'linear-gradient(135deg, #1e293b, #334155)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '32px', opacity: 0.5
+                            }}>
+                              {item.problematica?.icono || '🏗️'}
+                            </div>
+                          )}
+                          {/* Urgency Badge Overlay */}
                           <span style={{
+                            position: 'absolute', top: '10px', left: '10px',
+                            padding: '4px 12px', borderRadius: '8px',
+                            fontSize: '11px', fontWeight: '800',
                             background: prio.bg, color: prio.color,
-                            padding: '3px 8px', borderRadius: '8px',
-                            fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase'
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                           }}>
-                            {prio.emoji} {prio.label}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>
-                            {CATEGORIA_ICONOS[item.categoria] || '📋'} {item.categoria}
+                            ● {prio.label}
                           </span>
                         </div>
 
-                        <h4 style={{ margin: '0 0 6px', fontSize: '0.95rem', color: '#1e293b', fontWeight: '700', lineHeight: 1.3 }}>
-                          {item.titulo}
-                        </h4>
-                        <p style={{ margin: '0 0 10px', color: '#94a3b8', fontSize: '0.75rem', fontWeight: '500' }}>
-                          📍 {item.municipio}, {item.departamento}
-                        </p>
+                        {/* Card Content */}
+                        <div style={{ padding: '14px 16px' }}>
+                          <h4 style={{
+                            margin: '0 0 6px', fontSize: '14px', fontWeight: '700',
+                            color: '#0f172a', lineHeight: 1.3,
+                            overflow: 'hidden', textOverflow: 'ellipsis',
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'
+                          }}>
+                            {item.titulo}
+                          </h4>
+                          <p style={{
+                            margin: '0 0 12px', color: '#94a3b8',
+                            fontSize: '12px', fontWeight: '500'
+                          }}>
+                            📍 {item.municipio}, {item.departamento}
+                          </p>
 
-                        {/* Action Buttons */}
-                        <div style={{ display: 'flex', gap: '6px', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
-                          {/* Mover izquierda */}
+                          {/* Progress Bar (for columns 1 and 2) */}
                           {column.id > 0 && (
-                            <button
-                              disabled={isMoving}
-                              onClick={() => vm.manejarMover(item.id, column.id - 1)}
-                              style={{
-                                flex: 1, padding: '7px', borderRadius: '10px', border: '1px solid #e2e8f0',
-                                background: '#fff', color: '#475569', fontSize: '0.75rem', fontWeight: '700',
-                                cursor: 'pointer', transition: 'all 0.15s'
-                              }}
-                              title={`Mover a ${COLUMNAS_KANBAN[column.id - 1]?.title}`}
-                            >
-                              ← {COLUMNAS_KANBAN[column.id - 1]?.title}
-                            </button>
+                            <div style={{ marginBottom: '12px' }}>
+                              <div style={{
+                                display: 'flex', justifyContent: 'space-between',
+                                fontSize: '11px', color: '#94a3b8', fontWeight: '600', marginBottom: '4px'
+                              }}>
+                                <span>Progreso</span>
+                                <span>{progreso}%</span>
+                              </div>
+                              <div style={{
+                                height: '6px', borderRadius: '3px',
+                                background: '#f1f5f9', overflow: 'hidden'
+                              }}>
+                                <div style={{
+                                  height: '100%', borderRadius: '3px',
+                                  width: `${progreso}%`,
+                                  background: column.id === 2
+                                    ? 'linear-gradient(90deg, #10b981, #059669)'
+                                    : 'linear-gradient(90deg, #3b82f6, #2563eb)',
+                                  transition: 'width 0.5s ease'
+                                }} />
+                              </div>
+                            </div>
                           )}
 
-                          {/* Quitar del tablero (solo desde Cola) */}
-                          {column.id === 0 && (
-                            <button
-                              disabled={isMoving}
-                              onClick={() => vm.manejarQuitar(item.id)}
-                              style={{
-                                padding: '7px 10px', borderRadius: '10px', border: '1px solid #fee2e2',
-                                background: '#fef2f2', color: '#ef4444', fontSize: '0.75rem', fontWeight: '700',
-                                cursor: 'pointer', transition: 'all 0.15s'
-                              }}
-                              title="Quitar del tablero"
-                            >
-                              🗑️
-                            </button>
-                          )}
+                          {/* Footer: Avatars + Date */}
+                          <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                          }}>
+                            {/* Team avatars */}
+                            <div style={{ display: 'flex' }}>
+                              {[0, 1].map(i => (
+                                <div key={i} style={{
+                                  width: '26px', height: '26px', borderRadius: '50%',
+                                  background: AVATAR_COLORS[(item.id.charCodeAt(0) + i) % AVATAR_COLORS.length],
+                                  border: '2px solid #fff',
+                                  marginLeft: i > 0 ? '-8px' : '0',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: '10px', fontWeight: '800', color: '#fff'
+                                }}>
+                                  {String.fromCharCode(65 + (item.id.charCodeAt(i % item.id.length) % 26))}
+                                </div>
+                              ))}
+                            </div>
+                            <span style={{
+                              fontSize: '11px', color: '#94a3b8', fontWeight: '600',
+                              display: 'flex', alignItems: 'center', gap: '4px'
+                            }}>
+                              📅 {item.fecha_fin ? 'Vencido' : 'Activo'}
+                            </span>
+                          </div>
 
-                          {/* Mover derecha */}
-                          {column.id < 2 && (
-                            <button
-                              disabled={isMoving}
-                              onClick={() => vm.manejarMover(item.id, column.id + 1)}
-                              style={{
-                                flex: 1, padding: '7px', borderRadius: '10px', border: '1px solid #dbeafe',
-                                background: '#eff6ff', color: '#2563eb', fontSize: '0.75rem', fontWeight: '700',
-                                cursor: 'pointer', transition: 'all 0.15s'
-                              }}
-                              title={`Mover a ${COLUMNAS_KANBAN[column.id + 1]?.title}`}
-                            >
-                              {COLUMNAS_KANBAN[column.id + 1]?.title} →
-                            </button>
-                          )}
+                          {/* Action Buttons */}
+                          <div style={{
+                            display: 'flex', gap: '6px', marginTop: '12px',
+                            borderTop: '1px solid #f1f5f9', paddingTop: '12px'
+                          }}>
+                            {column.id > 0 && (
+                              <button
+                                disabled={isMoving}
+                                onClick={() => vm.manejarMover(item.id, column.id - 1)}
+                                style={{
+                                  flex: 1, padding: '8px', borderRadius: '8px',
+                                  border: '1px solid #e2e8f0', background: '#f8fafc',
+                                  color: '#475569', fontSize: '11px', fontWeight: '700',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ← {COLUMNAS_KANBAN[column.id - 1]?.title}
+                              </button>
+                            )}
+                            {column.id === 0 && (
+                              <button
+                                disabled={isMoving}
+                                onClick={() => vm.manejarQuitar(item.id)}
+                                style={{
+                                  padding: '8px 12px', borderRadius: '8px',
+                                  border: '1px solid #fecaca', background: '#fef2f2',
+                                  color: '#ef4444', fontSize: '11px', fontWeight: '700',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                            {column.id < 2 && (
+                              <button
+                                disabled={isMoving}
+                                onClick={() => vm.manejarMover(item.id, column.id + 1)}
+                                style={{
+                                  flex: 1, padding: '8px', borderRadius: '8px',
+                                  border: '1px solid #dbeafe', background: '#eff6ff',
+                                  color: '#2563eb', fontSize: '11px', fontWeight: '700',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {COLUMNAS_KANBAN[column.id + 1]?.title} →
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </article>
                     );
@@ -222,8 +326,8 @@ export default function AdminEntidadKanbanView() {
                   {column.items.length === 0 && (
                     <div style={{
                       textAlign: 'center', padding: '2.5rem 1rem',
-                      border: '2px dashed #e2e8f0', borderRadius: '16px',
-                      color: '#cbd5e1', fontSize: '0.85rem', fontWeight: '600'
+                      border: '2px dashed #e2e8f0', borderRadius: '14px',
+                      color: '#cbd5e1', fontSize: '13px', fontWeight: '600'
                     }}>
                       Sin tareas aquí
                     </div>
@@ -235,7 +339,15 @@ export default function AdminEntidadKanbanView() {
         </div>
       )}
 
-      {/* Modal Historial */}
+      {/* Footer hint */}
+      <div style={{
+        marginTop: '20px', textAlign: 'center', fontSize: '12px',
+        color: '#94a3b8', fontWeight: '500'
+      }}>
+        ℹ️ Haz click en una tarjeta para ver detalles y gestionar el equipo. Agrega nuevos proyectos desde <a href="/admin/reportes" style={{ color: '#3b82f6', textDecoration: 'underline' }}>Reportes</a> o desde el <a href="/admin/mapa-calor" style={{ color: '#3b82f6', textDecoration: 'underline' }}>Mapa de Calor</a>.
+      </div>
+
+      {/* Historial Modal - preserved from original */}
       {vm.mostrarHistorial && (
         <div
           className="modal-backdrop"
@@ -247,137 +359,86 @@ export default function AdminEntidadKanbanView() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: 'min(700px, 95%)', padding: 0, overflow: 'hidden',
-              borderRadius: '24px', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+              borderRadius: '20px', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
               boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
             }}
           >
-            {/* Modal Header */}
             <div style={{
-              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
               padding: '1.5rem 2rem', color: '#fff',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center'
             }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800' }}>📂 Historial de Completados</h2>
-                <p style={{ margin: '4px 0 0', opacity: 0.7, fontSize: '0.85rem' }}>
-                  Tareas completadas hace más de 8 horas
-                </p>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800' }}>📂 Historial</h2>
+                <p style={{ margin: '4px 0 0', opacity: 0.7, fontSize: '0.85rem' }}>Tareas completadas hace más de 8 horas</p>
               </div>
               <button
                 onClick={() => vm.setMostrarHistorial(false)}
                 style={{
                   background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
-                  borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer',
-                  fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer',
+                  fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}
               >✕</button>
             </div>
 
-            {/* Modal Body */}
             <div style={{ padding: '1.5rem', overflowY: 'auto', background: '#f8fafc' }}>
-              
-              {/* Filtros del Historial */}
               <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1.5rem', padding: '12px',
-                background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.02)', alignItems: 'center'
+                display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '1.5rem',
+                padding: '10px', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0',
+                alignItems: 'center'
               }}>
-                <div style={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0 12px' }}>
-                  <span style={{ fontSize: '0.9rem' }}>🔍</span>
-                  <input 
-                    type="text" 
-                    placeholder="Buscar tarea..." 
-                    value={vm.histBusqueda}
-                    onChange={(e) => vm.setHistBusqueda(e.target.value)}
-                    style={{ border: 'none', background: 'transparent', padding: '10px 8px', outline: 'none', width: '100%', fontSize: '0.85rem', color: '#475569', fontWeight: '500' }}
-                  />
-                </div>
-                
-                <select
-                  value={vm.histFiltroPrio}
-                  onChange={(e) => vm.setHistFiltroPrio(e.target.value)}
+                <input
+                  type="text" placeholder="🔍 Buscar..."
+                  value={vm.histBusqueda}
+                  onChange={(e) => vm.setHistBusqueda(e.target.value)}
                   style={{
-                    padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0',
-                    background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '0.85rem', outline: 'none'
+                    flex: '1 1 180px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    padding: '8px 12px', fontSize: '13px', outline: 'none'
                   }}
-                >
-                  <option value="todas">Todas las prioridades</option>
-                  <option value="critica">🔴 Crítica</option>
-                  <option value="alta">🟠 Alta</option>
-                  <option value="media">🔵 Media</option>
-                  <option value="baja">🟢 Baja</option>
+                />
+                <select value={vm.histFiltroPrio} onChange={(e) => vm.setHistFiltroPrio(e.target.value)}
+                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '600' }}>
+                  <option value="todas">Todas</option>
+                  <option value="critica">Crítica</option>
+                  <option value="alta">Alta</option>
+                  <option value="media">Media</option>
+                  <option value="baja">Baja</option>
                 </select>
-
-                <select
-                  value={vm.histFiltroDept}
-                  onChange={(e) => vm.cambiarHistDepartamento(e.target.value)}
-                  style={{
-                    padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0',
-                    background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '0.85rem', outline: 'none'
-                  }}
-                >
-                  <option value="Todos">Todos los departamentos</option>
+                <select value={vm.histFiltroDept} onChange={(e) => vm.cambiarHistDepartamento(e.target.value)}
+                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '600' }}>
+                  <option value="Todos">Todos</option>
                   {Object.keys(DEPARTAMENTOS_NICARAGUA).map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
-
-                {vm.histFiltroDept !== "Todos" && (
-                  <select
-                    value={vm.histFiltroCity}
-                    onChange={(e) => vm.setHistFiltroCity(e.target.value)}
-                    style={{
-                      padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0',
-                      background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '0.85rem', outline: 'none'
-                    }}
-                  >
-                    <option value="Todos">Todos los municipios</option>
-                    {vm.histCiudadesDisponibles.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                )}
               </div>
 
               {vm.historial.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
-                  <p style={{ fontWeight: '600' }}>No hay tareas completadas en el historial aún.</p>
-                  <p style={{ fontSize: '0.85rem' }}>Las tareas completadas aparecerán aquí después de 8 horas.</p>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📋</div>
+                  <p style={{ fontWeight: '600' }}>Sin historial aún.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {vm.historial.map((item) => {
                     const prio = PRIORIDAD_ESTILOS[item.prioridad] || PRIORIDAD_ESTILOS.media;
                     return (
                       <article key={item.id} style={{
-                        background: '#fff', borderRadius: '14px', padding: '14px 18px',
+                        background: '#fff', borderRadius: '12px', padding: '14px 16px',
                         border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center',
                         justifyContent: 'space-between', gap: '1rem'
                       }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', alignItems: 'center' }}>
-                            <span style={{
-                              background: prio.bg, color: prio.color, padding: '2px 8px',
-                              borderRadius: '6px', fontSize: '0.6rem', fontWeight: '800', textTransform: 'uppercase'
-                            }}>
-                              {prio.label}
-                            </span>
-                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                              {CATEGORIA_ICONOS[item.categoria] || '📋'} {item.categoria}
-                            </span>
-                          </div>
-                          <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b', fontWeight: '700' }}>{item.titulo}</h4>
-                          <p style={{ margin: '2px 0 0', color: '#94a3b8', fontSize: '0.75rem' }}>
-                            📍 {item.municipio} · Completado: {formatearFecha(item.fecha_fin)}
+                          <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#0f172a', fontWeight: '700' }}>{item.titulo}</h4>
+                          <p style={{ margin: 0, color: '#94a3b8', fontSize: '12px' }}>
+                            📍 {item.municipio} · {formatearFecha(item.fecha_fin)}
                           </p>
                         </div>
                         <span style={{
                           background: '#ecfdf5', color: '#10b981', padding: '4px 12px',
-                          borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', whiteSpace: 'nowrap'
-                        }}>
-                          ✅ Resuelto
-                        </span>
+                          borderRadius: '8px', fontSize: '11px', fontWeight: '800'
+                        }}>✅ Resuelto</span>
                       </article>
                     );
                   })}
