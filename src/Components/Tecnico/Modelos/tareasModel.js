@@ -6,20 +6,20 @@ import { uploadFile } from "../../../services/storageService";
  * Queries filtradas por técnico asignado
  */
 export const tareasTecnicoModel = {
-  /** Listar denuncias asignadas al técnico via uso_materiales_reparacion */
   async listarAsignadas(tecnicoId) {
-    // Buscar tareas_kanban donde id_responsable sea el técnico
-    const { data: tareas } = await supabase
-      .from("tareas_kanban")
-      .select("id_denuncia")
-      .eq("id_responsable", tecnicoId);
+    const [resTareas, resCuadrilla] = await Promise.all([
+      supabase.from("tareas_kanban").select("id_denuncia").eq("id_responsable", tecnicoId),
+      supabase.from("cuadrilla_obra").select("id_denuncia").or(`id_tecnico_encargado.eq.${tecnicoId},id_tecnico_ayudante.eq.${tecnicoId}`)
+    ]);
 
-    const ids = [...new Set((tareas || []).map(t => t.id_denuncia))];
+    const idsResponsable = (resTareas.data || []).map(t => t.id_denuncia);
+    const idsCuadrilla = (resCuadrilla.data || []).map(t => t.id_denuncia);
+    const ids = [...new Set([...idsResponsable, ...idsCuadrilla])];
     if (!ids.length) return { data: [], error: null };
 
     return await supabase
       .from("denuncias")
-      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,url_imagen,creado_el,actualizado_el,comentario_cierre")
+      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,direccion,ubicacion,url_imagen,creado_el,actualizado_el,comentario_cierre")
       .in("id", ids)
       .order("creado_el", { ascending: false });
   },

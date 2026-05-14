@@ -235,7 +235,7 @@ export default function TareasView() {
                     )}
 
                     {/* Botones de acción */}
-                    <div style={{ display: 'flex', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
                       <button 
                         style={{ flex: 1, background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.15s' }}
                         onClick={() => setReporteSeleccionado(tarea)}
@@ -453,6 +453,14 @@ export default function TareasView() {
             </div>
           </div>
         </div>
+      )}
+
+      {reporteSeleccionado && (
+        <ModalDetalleReporte
+          reporte={reporteSeleccionado}
+          alCerrar={() => setReporteSeleccionado(null)}
+          soloLectura
+        />
       )}
     </section>
   );

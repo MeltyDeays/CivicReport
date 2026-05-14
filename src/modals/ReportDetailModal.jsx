@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { formatearFecha } from "../utils/formatters";
+import { formatearFecha, parsearPuntoGeo } from "../utils/formatters";
 import { firmarReporte, retirarFirma, verificarFirma, contarFirmas } from "../services/firmasService";
 
-export default function ModalDetalleReporte({ reporte, alCerrar, alEditar, alEliminar, alCambiarFirma, alPagar, usuarioId }) {
+export default function ModalDetalleReporte({ reporte, alCerrar, alEditar, alEliminar, alCambiarFirma, alPagar, usuarioId, soloLectura }) {
   const [yaFirmo, setYaFirmo] = useState(false);
   const [totalFirmas, setTotalFirmas] = useState(0);
   const [procesando, setProcesando] = useState(false);
@@ -112,6 +112,20 @@ export default function ModalDetalleReporte({ reporte, alCerrar, alEditar, alEli
           </div>
         </div>
 
+        {(() => {
+          const geo = reporte.lat && reporte.lng ? { lat: reporte.lat, lng: reporte.lng } : parsearPuntoGeo(reporte.ubicacion);
+          if (!geo) return null;
+          return (
+            <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', height: '200px' }}>
+              <iframe
+                title="Ubicación"
+                width="100%" height="100%" frameBorder="0" style={{ border: 0 }}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng-0.005},${geo.lat-0.003},${geo.lng+0.005},${geo.lat+0.003}&layer=mapnik&marker=${geo.lat},${geo.lng}`}
+              />
+            </div>
+          );
+        })()}
+
         {/* H026: Mostrar comentario de cierre si existe */}
         {(reporte.estado === "completado" || reporte.estado === "rechazado") && reporte.comentario_cierre && (
           <div style={{
@@ -129,6 +143,7 @@ export default function ModalDetalleReporte({ reporte, alCerrar, alEditar, alEli
           </div>
         )}
 
+        {!soloLectura && <>
         {/* ─── Botón de Firma Funcional (H011 + H014) ─── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -175,6 +190,7 @@ export default function ModalDetalleReporte({ reporte, alCerrar, alEditar, alEli
             ) : yaFirmo ? '✓ Ya lo firmaste' : '✍️ Firmar Apoyo'}
           </button>
         </div>
+        </>}
 
         {usuarioId && reporte.id_ciudadano === usuarioId && (
           <div className="modal-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { tareasTecnicoModel } from "../Modelos/tareasModel";
 import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
+import { parsearPuntoGeo } from "../../../utils/formatters";
 
 const COLUMNAS = [
   { id: 0, key: "pendiente", title: "Pendiente" },
@@ -26,7 +27,10 @@ export function useTareasTecnico() {
     try {
       const res = await tareasTecnicoModel.listarAsignadas(perfil.id);
       if (res.error) throw new Error(res.error.message);
-      setTareas(res.data || []);
+      setTareas((res.data || []).map(t => {
+        const geo = parsearPuntoGeo(t.ubicacion);
+        return { ...t, lat: geo?.lat, lng: geo?.lng };
+      }));
     } catch (e) {
       setError(e.message);
     } finally {
