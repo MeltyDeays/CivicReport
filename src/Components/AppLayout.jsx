@@ -3,16 +3,17 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { supabase } from "../core/supabaseClient";
 
 const enlacesAdmin = [
-  { to: "/admin/reportes", label: "Gestion de Reportes" },
-  { to: "/admin/proyectos", label: "Tablero de Proyectos" },
-  { to: "/admin/cuadrillas", label: "Cuadrillas y Personal" },
-  { to: "/admin/mapa-calor", label: "Mapa de Calor" },
-  { to: "/admin/inventario", label: "Inventario" },
-  { to: "/admin/solicitudes", label: "Solicitudes" },
-  { to: "/admin/estadisticas-materiales", label: "Estadisticas" },
+  { to: "/admin/dashboard", label: "Dashboard", icon: "📊" },
+  { to: "/admin/reportes", label: "Reportes", icon: "📄" },
+  { to: "/admin/proyectos", label: "Proyectos", icon: "📋" },
+  { to: "/admin/mapa-calor", label: "Mapa de Calor", icon: "🗺️" },
+  { to: "/admin/cuadrillas", label: "Personal", icon: "👥" },
+  { to: "/admin/inventario", label: "Inventario", icon: "📦" },
+  { to: "/admin/solicitudes", label: "Solicitudes", icon: "📩" },
+  { to: "/admin/estadisticas-materiales", label: "Estadísticas", icon: "📈" },
 ];
 
-const enlacesSuperAdmin = [{ to: "/super/dashboard", label: "Dashboard" }];
+const enlacesSuperAdmin = [{ to: "/super/dashboard", label: "Dashboard", icon: "📊" }];
 
 export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrarSesion, sesion, perfil }) {
   const [cerrando, setCerrando] = useState(false);
@@ -38,9 +39,8 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
   }, [esTecnico, perfil?.id]);
 
   const enlacesTecnico = [
-    { to: "/tecnico/tareas", label: "Mis Tareas" },
-    // Solo mostrar Recursos si es encargado
-    ...(esEncargado ? [{ to: "/tecnico/recursos", label: "Recursos" }] : []),
+    { to: "/tecnico/tareas", label: "Mis Tareas", icon: "🔧" },
+    ...(esEncargado ? [{ to: "/tecnico/recursos", label: "Recursos", icon: "📦" }] : []),
   ];
 
   const enlaces = esTecnico
@@ -67,41 +67,160 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
   };
 
   return (
-    <div className="app-shell" style={{ display: 'flex', height: '100vh', background: '#f8fafc' }}>
+    <div className="app-shell" style={{ display: 'flex', height: '100vh', background: '#f1f5f9' }}>
       
       {!esCiudadano && (
-        <aside className="sidebar" style={{ width: '280px', background: '#0f172a', color: '#fff', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '2rem' }}>
-            <h2 className="brand" style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800' }}>CivicReports</h2>
-            <p className="role-tag" style={{ color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase', marginTop: '4px' }}>{etiquetaRol}</p>
+        <aside style={{
+          width: '260px',
+          minWidth: '260px',
+          background: 'linear-gradient(180deg, #0c1929 0%, #111d2e 100%)',
+          color: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+          position: 'relative',
+          zIndex: 50
+        }}>
+          {/* Branding */}
+          <div style={{
+            padding: '24px 20px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.4)'
+            }}>
+              📍
+            </div>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '-0.02em' }}>CivicReports</div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>{etiquetaRol}</div>
+            </div>
           </div>
-          
-          <nav className="nav-links" style={{ flex: 1, padding: '0 1rem' }}>
+
+          {/* User Card */}
+          <div style={{
+            margin: '4px 16px 20px',
+            padding: '14px 16px',
+            background: 'rgba(37,99,235,0.12)',
+            borderRadius: '14px',
+            border: '1px solid rgba(37,99,235,0.2)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <div style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+                fontWeight: '800',
+                color: '#fff'
+              }}>
+                {(nombreUsuario || "AG").substring(0, 2).toUpperCase()}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {nombreUsuario || "Agente Gubernamental"}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                  Nicaragua
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav style={{ flex: 1, padding: '0 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
             {enlaces.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  fontWeight: isActive ? '700' : '500',
+                  color: isActive ? '#fff' : '#94a3b8',
+                  background: isActive ? 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)' : 'transparent',
+                  boxShadow: isActive ? '0 4px 12px rgba(37,99,235,0.3)' : 'none',
+                  transition: 'all 0.2s ease',
+                  position: 'relative'
+                })}
               >
-                {item.label}
+                <span style={{ fontSize: '16px', width: '20px', textAlign: 'center' }}>{item.icon}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {location.pathname === item.to && (
+                  <span style={{ fontSize: '12px', opacity: 0.8 }}>›</span>
+                )}
               </NavLink>
             ))}
           </nav>
 
+          {/* Técnico: modo ciudadano */}
           {rolReal === "tecnico" && (
-            <div style={{ padding: '0 1rem', marginBottom: '1rem' }}>
+            <div style={{ padding: '0 12px', marginBottom: '8px' }}>
               <NavLink
                 to="/ciudadano/reportes"
-                className="nav-link"
-                style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid #3b82f6' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#3b82f6',
+                  background: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59,130,246,0.15)'
+                }}
               >
                 🔄 Ir a Modo Ciudadano
               </NavLink>
             </div>
           )}
 
-          <button className="sidebar-logout" onClick={manejarCerrarSesion} disabled={cerrando} style={{ margin: '1rem', padding: '1rem', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-            {cerrando ? "Saliendo..." : "Cerrar Sesión"}
+          {/* Logout */}
+          <button
+            onClick={manejarCerrarSesion}
+            disabled={cerrando}
+            style={{
+              margin: '12px 16px 20px',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: 'rgba(255,255,255,0.04)',
+              color: '#94a3b8',
+              border: '1px solid rgba(255,255,255,0.06)',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span>↩</span> {cerrando ? "Saliendo..." : "Salir"}
           </button>
         </aside>
       )}
@@ -127,6 +246,7 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
               <nav style={{ display: 'flex', gap: '8px' }}>
                 <NavLink to="/ciudadano/reportes" style={({ isActive }) => ({ padding: '8px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.95rem', color: isActive ? '#1f64ff' : '#64748b', background: isActive ? '#f0f7ff' : 'transparent' })}>📊 Reportes</NavLink>
                 <NavLink to="/ciudadano/sugerencias" style={({ isActive }) => ({ padding: '8px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.95rem', color: isActive ? '#1f64ff' : '#64748b', background: isActive ? '#f0f7ff' : 'transparent' })}>💡 Sugerencias</NavLink>
+                <NavLink to="/ciudadano/perfil" style={({ isActive }) => ({ padding: '8px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.95rem', color: isActive ? '#1f64ff' : '#64748b', background: isActive ? '#f0f7ff' : 'transparent' })}>👤 Mi Perfil</NavLink>
               </nav>
             </div>
 

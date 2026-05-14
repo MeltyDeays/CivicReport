@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useMemo, useState } from "react";
 import DisenoAplicacion from "./Components/AppLayout";
 // AdminEntidad
+import VistaDashboardAdmin from "./Components/AdminEntidad/Vistas/DashboardView";
 import VistaKanbanAdmin from "./Components/AdminEntidad/Vistas/KanbanView";
 import VistaReportesAdmin from "./Components/AdminEntidad/Vistas/ReportesView";
 import VistaMapaCalor from "./Components/AdminEntidad/Vistas/MapaCalorView";
@@ -22,6 +23,7 @@ import VistaSuperAdmin from "./Components/SuperAdmin/Vistas/DashboardView";
 import VistaInicioSesion from "./views/InicioSesionView";
 import VistaRegistro from "./views/RegistroView";
 import { useAuth, AuthProvider } from "./modules/auth/controllers/useAuth.jsx";
+import VistaPerfil from "./views/PerfilView";
 
 function obtenerVistaPorRol(rolBd) {
   if (rolBd === "ciudadano") return "ciudadano";
@@ -35,7 +37,7 @@ function rutaDefaultPorRol(rol) {
   if (rol === "ciudadano") return "/ciudadano/reportes";
   if (rol === "super_admin") return "/super/dashboard";
   if (rol === "tecnico") return "/tecnico/tareas";
-  return "/admin/reportes";
+  return "/admin/dashboard";
 }
 
 function RutaProtegida({ sesion, rolActual, rolesPermitidos, cargandoSesion, children }) {
@@ -98,6 +100,7 @@ function App() {
         >
           <Route path="/ciudadano/reportes" element={<VistaReportesCiudadano />} />
           <Route path="/ciudadano/sugerencias" element={<VistaSugerencias />} />
+          <Route path="/ciudadano/perfil" element={<VistaPerfil />} />
         </Route>
 
         <Route
@@ -118,6 +121,7 @@ function App() {
             </RutaProtegida>
           }
         >
+          <Route path="/admin/dashboard" element={<VistaDashboardAdmin />} />
           <Route path="/admin/reportes" element={<VistaReportesAdmin />} />
           <Route path="/admin/proyectos" element={<VistaKanbanAdmin />} />
           <Route path="/admin/cuadrillas" element={<VistaCuadrillasAdmin />} />
