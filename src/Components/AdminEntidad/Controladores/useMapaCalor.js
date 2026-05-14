@@ -91,6 +91,17 @@ export function useMapaCalor() {
 
   const filteredReportes = useMemo(() => {
     return dataPoints.filter((r) => {
+      // 1. Si está marcado explícitamente como oculto, no mostrar
+      if (r.es_visible === false) return false;
+
+      // 2. Auto-ocultar completados de más de 8 horas
+      if (r.estado === 'completado' && r.actualizado_el) {
+        const ahora = Date.now();
+        const OCHO_HORAS_MS = 8 * 60 * 60 * 1000;
+        const tiempoTranscurrido = ahora - new Date(r.actualizado_el).getTime();
+        if (tiempoTranscurrido > OCHO_HORAS_MS) return false;
+      }
+
       if (activeType !== r.originType) return false;
       if (selectedDept !== "Todos los departamentos" && r.departamento === selectedDept) {
         if (selectedCity !== "Todas las ciudades" && r.municipio !== selectedCity) return false;

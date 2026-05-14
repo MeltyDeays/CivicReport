@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { procesarPagoSimulado } from "../services/pagosService";
+import { FlippableCreditCard } from "../Components/ui/credit-debit-card";
 
 /**
  * H016 — Modal de Pago Simulado
@@ -9,6 +10,7 @@ export default function PaymentModal({ abierto, denuncia, alCerrar, alExito }) {
   const [tarjeta, setTarjeta] = useState("");
   const [expiracion, setExpiracion] = useState("");
   const [cvv, setCvv] = useState("");
+  const [cvvFocus, setCvvFocus] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState("");
   const [completado, setCompletado] = useState(false);
@@ -78,21 +80,15 @@ export default function PaymentModal({ abierto, denuncia, alCerrar, alExito }) {
           </div>
         ) : (
           <form onSubmit={manejarPago} style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '4px' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)',
-              borderRadius: '16px', padding: '20px', color: '#fff', marginBottom: '8px'
-            }}>
-              <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '12px', letterSpacing: '1px' }}>TARJETA DE CRÉDITO / DÉBITO</div>
-              <div style={{ fontSize: '20px', letterSpacing: '3px', fontFamily: 'monospace', marginBottom: '12px' }}>
-                {tarjeta || "•••• •••• •••• ••••"}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.8 }}>
-                <span>Vence: {expiracion || "MM/AA"}</span>
-                <span>SIMULADO</span>
-              </div>
-            </div>
+            <FlippableCreditCard 
+              cardNumber={tarjeta}
+              expiryDate={expiracion}
+              cvv={cvv}
+              cardholderName="CIUDADANO EJEMPLO"
+              isFlipped={cvvFocus}
+            />
 
-            <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center' }}>
+            <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', marginTop: '-8px' }}>
               Destacar: <strong>{denuncia.titulo}</strong> — <strong>C$ {MONTO.toFixed(2)}</strong>
             </p>
 
@@ -111,6 +107,7 @@ export default function PaymentModal({ abierto, denuncia, alCerrar, alExito }) {
               <div className="input-group">
                 <span className="label-premium">CVV</span>
                 <input name="cvv" type="password" value={cvv} onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  onFocus={() => setCvvFocus(true)} onBlur={() => setCvvFocus(false)}
                   placeholder="•••" maxLength={4} required autoComplete="cc-csc" />
               </div>
             </div>

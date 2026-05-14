@@ -23,11 +23,13 @@ export default function CuadrillasView() {
   const { 
     tecnicos, cuadrillas, invitaciones, cargando, error, 
     crearCuadrilla, alternarEstado, eliminarCuadrilla, 
-    generarInvitacion, eliminarInvitacion, editarInvitacion 
+    generarInvitacion, eliminarInvitacion, editarInvitacion,
+    editarTecnico, desactivarTecnico, reactivarTecnico
   } = useCuadrillas();
   
   const [tabActual, setTabActual] = useState("cuadrillas");
   const [mostrandoForm, setMostrandoForm] = useState(false);
+  const [procesandoTec, setProcesandoTec] = useState("");
   const [nombre, setNombre] = useState("");
   const [tamanoMaximo, setTamanoMaximo] = useState(4);
   const [liderId, setLiderId] = useState("");
@@ -93,6 +95,15 @@ export default function CuadrillasView() {
               transition: 'all 0.2s'
             }}
           >🛡️ Cuadrillas</button>
+          <button 
+            onClick={() => setTabActual('personal')}
+            style={{ 
+              padding: '10px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
+              background: tabActual === 'personal' ? '#fff' : 'transparent',
+              color: tabActual === 'personal' ? '#0f172a' : '#fff',
+              transition: 'all 0.2s'
+            }}
+          >👤 Personal</button>
           <button 
             onClick={() => setTabActual('reclutamiento')}
             style={{ 
@@ -219,7 +230,26 @@ export default function CuadrillasView() {
                   {inv.codigo}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '700' }}>{EMOJIS_ESPECIALIDAD[inv.especialidad]} {inv.especialidad}</span>
+                  {!inv.usado ? (
+                    <select 
+                      value={inv.especialidad}
+                      onChange={(e) => editarInvitacion(inv.id, e.target.value).catch(err => alert("Error al editar: " + err.message))}
+                      style={{ padding: '6px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', background: '#f8fafc' }}
+                      title="Editar especialidad del código"
+                    >
+                      {Object.entries(NOMBRES_ESPECIALIDAD).map(([k, v]) => (
+                        <option key={k} value={k}>{EMOJIS_ESPECIALIDAD[k]} {v}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span 
+                      style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '700', cursor: 'not-allowed' }} 
+                      title="No se puede editar un código ya utilizado"
+                      onClick={() => alert("No se puede editar un código de invitación que ya ha sido utilizado por un técnico.")}
+                    >
+                      {EMOJIS_ESPECIALIDAD[inv.especialidad]} {NOMBRES_ESPECIALIDAD[inv.especialidad] || inv.especialidad} 🔒
+                    </span>
+                  )}
                   <span style={{ fontSize: '0.7rem', fontWeight: '800', color: inv.usado ? '#94a3b8' : '#3b82f6' }}>{inv.usado ? "USADO" : "DISPONIBLE"}</span>
                 </div>
                 {!inv.usado && (
@@ -228,6 +258,105 @@ export default function CuadrillasView() {
               </article>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* TAB PERSONAL — H023: Gestión individual de técnicos */}
+      {tabActual === 'personal' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ margin: 0, color: '#1e293b', fontWeight: '800' }}>Técnicos Registrados ({tecnicos.length})</h2>
+          </div>
+
+          {tecnicos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem', background: '#fff', borderRadius: '24px', border: '1px dashed #cbd5e1' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👤</div>
+              <h3 style={{ margin: 0, color: '#1e293b' }}>Sin técnicos registrados</h3>
+              <p style={{ color: '#64748b' }}>Genera códigos de invitación en la pestaña "Reclutar" para incorporar personal.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+              {tecnicos.map(tec => {
+                const activo = tec.activo !== false;
+                const procesando = procesandoTec === tec.id;
+                return (
+                  <article key={tec.id} style={{
+                    background: '#fff', borderRadius: '24px', padding: '1.5rem',
+                    border: `1px solid ${activo ? '#e2e8f0' : '#fee2e2'}`,
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
+                    opacity: activo ? 1 : 0.7,
+                    position: 'relative'
+                  }}>
+                    {/* Badge de estado */}
+                    <span style={{
+                      position: 'absolute', top: '1rem', right: '1rem',
+                      padding: '4px 12px', borderRadius: '10px', fontSize: '0.7rem',
+                      fontWeight: '800', textTransform: 'uppercase',
+                      background: activo ? '#ecfdf5' : '#fef2f2',
+                      color: activo ? '#10b981' : '#ef4444'
+                    }}>
+                      {activo ? '🟢 Activo' : '🔴 Inactivo'}
+                    </span>
+
+                    {/* Datos del técnico */}
+                    <div style={{ marginBottom: '1.5rem', paddingRight: '90px' }}>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>
+                        {EMOJIS_ESPECIALIDAD[tec.especialidad] || '🛠️'}
+                      </div>
+                      <h3 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#1e293b', fontWeight: '800' }}>
+                        {tec.nombre_completo}
+                      </h3>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem', fontWeight: '600' }}>
+                        {NOMBRES_ESPECIALIDAD[tec.especialidad] || tec.especialidad}
+                      </p>
+                    </div>
+
+                    {/* Acciones H023 */}
+                    <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                      <button
+                        disabled={procesando}
+                        onClick={async () => {
+                          const nuevoNombre = window.prompt('Editar nombre:', tec.nombre_completo);
+                          if (nuevoNombre && nuevoNombre !== tec.nombre_completo) {
+                            setProcesandoTec(tec.id);
+                            try { await editarTecnico(tec.id, { nombre_completo: nuevoNombre }); }
+                            catch (e) { alert(e.message); }
+                            finally { setProcesandoTec(''); }
+                          }
+                        }}
+                        style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
+                      >✏️ Editar</button>
+
+                      {activo ? (
+                        <button
+                          disabled={procesando}
+                          onClick={async () => {
+                            if (!window.confirm(`¿Desactivar a ${tec.nombre_completo}? Se validará que no tenga tareas activas.`)) return;
+                            setProcesandoTec(tec.id);
+                            try { await desactivarTecnico(tec.id); }
+                            catch (e) { alert(e.message); }
+                            finally { setProcesandoTec(''); }
+                          }}
+                          style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#fef2f2', color: '#ef4444', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
+                        >🚫 Desactivar</button>
+                      ) : (
+                        <button
+                          disabled={procesando}
+                          onClick={async () => {
+                            setProcesandoTec(tec.id);
+                            try { await reactivarTecnico(tec.id); }
+                            catch (e) { alert(e.message); }
+                            finally { setProcesandoTec(''); }
+                          }}
+                          style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#ecfdf5', color: '#10b981', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
+                        >✅ Reactivar</button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </section>

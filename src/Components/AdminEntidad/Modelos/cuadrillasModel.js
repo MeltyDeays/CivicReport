@@ -5,17 +5,63 @@ import { supabase } from "../../../core/supabaseClient";
  * Tablas: perfiles (tecnicos), cuadrillas_base, cuadrilla_miembros
  */
 export const cuadrillasModel = {
-  /** Obtiene todos los técnicos activos de la entidad */
+  /** Obtiene todos los técnicos de la entidad (activos e inactivos) */
   async listarTecnicosEntidad(entidadId) {
     const { data, error } = await supabase
       .from("perfiles")
-      .select("id, nombre_completo, especialidad")
+      .select("id, nombre_completo, especialidad, activo")
       .eq("id_entidad", entidadId)
       .eq("rol", "tecnico")
       .order("nombre_completo");
       
     if (error) throw new Error(error.message);
     return data || [];
+  },
+
+  /** H023: Editar datos de un técnico (nombre, especialidad) */
+  async editarTecnico(tecnicoId, campos) {
+    const actualizacion = {};
+    if (campos.nombre_completo) actualizacion.nombre_completo = campos.nombre_completo;
+    if (campos.especialidad) actualizacion.especialidad = campos.especialidad;
+
+    const { error } = await supabase
+      .from("perfiles")
+      .update(actualizacion)
+      .eq("id", tecnicoId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  /** H023: Desactivar técnico (validando que no tenga tareas pendientes/en reparación) */
+  async desactivarTecnico(tecnicoId) {
+    // 1. Verificar tareas activas via tareas_kanban
+    const { data: tareas } = await supabase
+      .from("tareas_kanban")
+      .select("id_denuncia, denuncias!inner(estado)")
+      .eq("id_responsable", tecnicoId)
+      .in("denuncias.estado", ["pendiente", "en_reparacion"]);
+
+    if (tareas && tareas.length > 0) {
+      throw new Error(`No se puede desactivar: tiene ${tareas.length} tarea(s) pendiente(s) o en reparación.`);
+    }
+
+    // 2. Marcar como inactivo
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ activo: false })
+      .eq("id", tecnicoId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  /** H023: Reactivar técnico */
+  async reactivarTecnico(tecnicoId) {
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ activo: true })
+      .eq("id", tecnicoId);
+
+    if (error) throw new Error(error.message);
   },
 
   /** Obtiene las cuadrillas de la entidad con sus miembros */

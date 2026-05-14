@@ -76,9 +76,28 @@ export function useCuadrillas() {
     return actualizada;
   };
 
+  // H023: Editar datos de un técnico
+  const editarTecnico = async (tecnicoId, campos) => {
+    await cuadrillasModel.editarTecnico(tecnicoId, campos);
+    await cargarDatos();
+  };
+
+  // H023: Desactivar técnico (valida tareas pendientes)
+  const desactivarTecnico = async (tecnicoId) => {
+    await cuadrillasModel.desactivarTecnico(tecnicoId);
+    await cargarDatos();
+  };
+
+  // H023: Reactivar técnico
+  const reactivarTecnico = async (tecnicoId) => {
+    await cuadrillasModel.reactivarTecnico(tecnicoId);
+    await cargarDatos();
+  };
+
   return { 
     tecnicos, cuadrillas, invitaciones, cargando, error, 
     recargar: cargarDatos, crearCuadrilla, alternarEstado, 
-    eliminarCuadrilla, generarInvitacion, eliminarInvitacion, editarInvitacion 
+    eliminarCuadrilla, generarInvitacion, eliminarInvitacion, editarInvitacion,
+    editarTecnico, desactivarTecnico, reactivarTecnico
   };
 }
