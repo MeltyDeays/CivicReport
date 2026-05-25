@@ -368,12 +368,17 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
         });
 
         const respuestaLimpia = response.text.trim();
-        if (respuestaLimpia.startsWith("{") && respuestaLimpia.endsWith("}")) {
+        const indexInicio = respuestaLimpia.indexOf("{");
+        const indexFin = respuestaLimpia.lastIndexOf("}");
+
+        if (indexInicio !== -1 && indexFin !== -1 && indexFin > indexInicio) {
+          const posibleJson = respuestaLimpia.substring(indexInicio, indexFin + 1);
           try {
-            const parsed = JSON.parse(respuestaLimpia);
-            respuestaTexto = parsed.respuesta;
+            const parsed = JSON.parse(posibleJson);
+            respuestaTexto = parsed.respuesta || "Aquí tienes el gráfico solicitado:";
             graficoDetectado = parsed.grafico;
-          } catch {
+          } catch (errJson) {
+            console.warn("Fallo al parsear JSON extraído del chatbot:", errJson.message);
             respuestaTexto = respuestaLimpia;
           }
         } else {
