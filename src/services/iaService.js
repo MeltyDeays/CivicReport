@@ -206,6 +206,16 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
 
     const nombreEntidad = entidad?.nombre || "la entidad";
 
+    // Obtener problemáticas asignadas a esta entidad para filtrar denuncias
+    const { data: entProbs, error: errProbs } = await supabase
+      .from("entidad_problematica")
+      .select("problematica:problematicas(nombre)")
+      .eq("entidad_id", entidadId);
+
+    const categoriasValidas = (entProbs || [])
+      .map(p => p.problematica?.nombre?.toLowerCase())
+      .filter(Boolean);
+
     // Obtener estadísticas de reportes de la entidad
     const { data: reportes, error: errRep } = await supabase
       .from("denuncias")
@@ -214,10 +224,19 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
 
     if (errRep) throw errRep;
 
+    // Filtrar reportes para que contengan únicamente los de la entidad
+    const reportesFiltrados = (reportes || []).filter(r => {
+      if (!r.categoria) return false;
+      // Si no hay categorías configuradas para la entidad, permitimos todos para evitar reportes vacíos,
+      // pero si hay configuradas, restringimos estrictamente a ellas.
+      if (categoriasValidas.length === 0) return true;
+      return categoriasValidas.includes(r.categoria.toLowerCase());
+    });
+
     // Calcular métricas locales
-    const totalSemanales = reportes.length;
+    const totalSemanales = reportesFiltrados.length;
     const porCategoria = {};
-    reportes.forEach(r => {
+    reportesFiltrados.forEach(r => {
       porCategoria[r.categoria] = (porCategoria[r.categoria] || 0) + 1;
     });
 
