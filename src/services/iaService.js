@@ -298,47 +298,98 @@ Se sugiere priorizar recursos hacia las categorías de mayor impacto en "${nombr
  */
 export async function procesarConsultaChatbot(mensaje, entidadId) {
   try {
-    // 1. Obtener denuncias de la entidad
-    const { data: denuncias } = await supabase
+    // 1. Obtener problemáticas asignadas a esta entidad para filtrar denuncias
+    const { data: entProbs } = await supabase
+      .from("entidad_problematica")
+      .select("problematica:problematicas(nombre)")
+      .eq("entidad_id", entidadId);
+
+    const categoriasValidas = (entProbs || [])
+      .map(p => p.problematica?.nombre?.toLowerCase())
+      .filter(Boolean);
+
+    // 2. Obtener denuncias de la entidad
+    const { data: todasDenuncias } = await supabase
       .from("denuncias")
-      .select("estado, categoria")
+      .select("estado, categoria, nivel_impacto, creado_el")
       .eq("entidad_id", entidadId);
 
-    // 2. Obtener cuadrillas y sus tareas asignadas
-    const { data: cuadrillas } = await supabase
-      .from("cuadrilla_obra")
-      .select("id, nombre")
-      .eq("entidad_id", entidadId);
-
-    const idsCuadrillas = (cuadrillas || []).map(c => c.id);
-    let tareas = [];
-    if (idsCuadrillas.length > 0) {
-      const { data: tareasRes } = await supabase
-        .from("tareas_cuadrilla")
-        .select("estado, id_cuadrilla")
-        .in("id_cuadrilla", idsCuadrillas);
-      tareas = tareasRes || [];
-    }
-
-    // 3. Compilar datos analíticos reales
-    const statsDenuncias = { creado: 0, en_progreso: 0, completado: 0 };
-    const porCategoria = {};
-    (denuncias || []).forEach(d => {
-      if (statsDenuncias[d.estado] !== undefined) statsDenuncias[d.estado]++;
-      if (d.categoria) porCategoria[d.categoria] = (porCategoria[d.categoria] || 0) + 1;
+    // Filtrar reportes para que contengan únicamente los de la entidad
+    const denuncias = (todasDenuncias || []).filter(r => {
+      if (!r.categoria) return false;
+      if (categoriasValidas.length === 0) return true;
+      return categoriasValidas.includes(r.categoria.toLowerCase());
     });
 
-    const statsCuadrillas = (cuadrillas || []).map(c => {
-      const tareasCuadrilla = tareas.filter(t => t.id_cuadrilla === c.id);
-      const total = tareasCuadrilla.length;
-      const completadas = tareasCuadrilla.filter(t => t.estado === "completado").length;
+    // 3. Obtener cuadrillas y calcular su resolución usando cuadrillas_base, cuadrilla_miembros y tareas_kanban
+    const { data: cuadrillasBase } = await supabase
+      .from("cuadrillas_base")
+      .select("id, nombre, id_lider")
+      .eq("id_entidad", entidadId);
+
+    const listaCuadrillas = cuadrillasBase || [];
+    const idsCuadrillas = listaCuadrillas.map(c => c.id);
+
+    let miembros = [];
+    if (idsCuadrillas.length > 0) {
+      const { data: miembrosRes } = await supabase
+        .from("cuadrilla_miembros")
+        .select("id_cuadrilla, id_empleado")
+        .in("id_cuadrilla", idsCuadrillas);
+      miembros = miembrosRes || [];
+    }
+
+    // Obtener técnicos de la cuadrilla (líder + ayudantes)
+    const tecnicosIds = Array.from(new Set([
+      ...listaCuadrillas.map(c => c.id_lider).filter(Boolean),
+      ...miembros.map(m => m.id_empleado).filter(Boolean)
+    ]));
+
+    let tareasKanban = [];
+    if (tecnicosIds.length > 0) {
+      const { data: tareasRes } = await supabase
+        .from("tareas_kanban")
+        .select("id_responsable, id_denuncia, denuncias!inner(estado)")
+        .in("id_responsable", tecnicosIds);
+      tareasKanban = tareasRes || [];
+    }
+
+    // 4. Compilar datos analíticos reales y limpios
+    const statsDenuncias = { creado: 0, en_progreso: 0, completado: 0 };
+    const porCategoria = {};
+    const porImpacto = { critica: 0, alta: 0, media: 0, baja: 0 };
+
+    denuncias.forEach(d => {
+      if (statsDenuncias[d.estado] !== undefined) statsDenuncias[d.estado]++;
+      if (d.categoria) porCategoria[d.categoria] = (porCategoria[d.categoria] || 0) + 1;
+      
+      const impactoNormalizado = d.nivel_impacto?.toLowerCase()
+        .replace("crítica", "critica")
+        .replace("crítico", "critica")
+        .replace("critico", "critica");
+      if (porImpacto[impactoNormalizado] !== undefined) {
+        porImpacto[impactoNormalizado]++;
+      }
+    });
+
+    const statsCuadrillas = listaCuadrillas.map(c => {
+      const miembrosCuadrilla = [
+        c.id_lider,
+        ...miembros.filter(m => m.id_cuadrilla === c.id).map(m => m.id_empleado)
+      ].filter(Boolean);
+
+      const tareasDeLaCuadrilla = tareasKanban.filter(t => miembrosCuadrilla.includes(t.id_responsable));
+      const total = tareasDeLaCuadrilla.length;
+      const completadas = tareasDeLaCuadrilla.filter(t => t.denuncias?.estado === "completado").length;
       const resolucionPct = total > 0 ? Math.round((completadas / total) * 100) : 0;
+
       return { nombre: c.nombre, total, completadas, resolucionPct };
     });
 
     const contextoDatos = {
       denunciasPorEstado: statsDenuncias,
       denunciasPorCategoria: porCategoria,
+      denunciasPorNivelImpacto: porImpacto,
       resolucionCuadrillas: statsCuadrillas
     };
 
@@ -351,19 +402,27 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
           model: MODELO_IA,
           system: `Eres el Bot de IA oficial de CivicReport ("CivicReport's Bot").
           Tu rol es conversar y responder consultas analíticas basándote únicamente en los datos reales de la entidad del administrador logueado.
-          Los datos actuales de la entidad son: ${JSON.stringify(contextoDatos)}.
+          Los datos analíticos reales actuales de la entidad son: ${JSON.stringify(contextoDatos)}.
           
-          Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
+          Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, nivel de impacto, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
           {
-            "respuesta": "Texto explicativo breve que acompaña al gráfico.",
+            "respuesta": "Texto explicativo analítico breve que describe la gráfica y los datos de la entidad.",
             "grafico": {
               "tipo": "barras",
               "datos": [
-                { "etiqueta": "Nombre del Item", "valor": 10 }
+                { "etiqueta": "Nombre de la Categoría/Estado/Cuadrilla", "valor": 12 }
               ]
             }
           }
-          Si el usuario NO te pide visualizar, graficar ni ver datos, responde en texto plano de manera directa (por ejemplo, dando sugerencias, respondiendo dudas sobre el sistema, etc.) sin formato JSON.`,
+          
+          Instrucciones de mapeo de datos reales para gráficos:
+          1. Denuncias por Estado: Mapea "denunciasPorEstado" (ej: etiqueta: "Creado", valor: contador).
+          2. Denuncias por Categoría: Mapea "denunciasPorCategoria" (ej: etiqueta: nombre de la categoría, valor: contador).
+          3. Denuncias por Nivel de Impacto: Mapea "denunciasPorNivelImpacto" (ej: etiqueta: "Critica" | "Alta" | "Media" | "Baja", valor: contador).
+          4. Resolución de Cuadrillas: Mapea "resolucionCuadrillas" (ej: etiqueta: nombre de la cuadrilla, valor: resolucionPct).
+
+          Si no hay datos registrados (valores en 0), genera de todos modos el gráfico con valores en 0 e indícale amigablemente en "respuesta" cómo puede registrar denuncias o asignar cuadrillas para empezar.
+          Si el usuario NO te pide visualizar, graficar ni ver datos, responde en texto plano de manera directa sin formato JSON.`,
           prompt: mensaje
         });
 
