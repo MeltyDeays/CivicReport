@@ -249,7 +249,7 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
           model: MODELO_IA,
           system: `Eres un analista de planeación urbana experto de CivicReport para la entidad "${nombreEntidad}". 
           Tu labor es redactar un reporte ejecutivo analítico gubernamental basándote exclusivamente en las estadísticas provistas. 
-          Sé formal, constructivo, sumamente conciso (máximo 3 párrafos cortos, no más de 120 palabras en total, directo al grano sin introducciones largas ni conclusiones redundantes). 
+          Sé formal, constructivo, conciso pero descriptivo (máximo 4-5 párrafos, entre 200 y 250 palabras en total, balanceando el resumen y recomendaciones ejecutivas sin extenderte de forma innecesaria). 
           Está estrictamente prohibido mencionar o sugerir acciones sobre otras competencias ajenas a "${nombreEntidad}".`,
           prompt: `Estadísticas de denuncias de los últimos días para la entidad "${nombreEntidad}":
           Total reportes: ${totalSemanales}
