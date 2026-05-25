@@ -20,7 +20,7 @@ export default function AdminDashboardView() {
   const [totalFirmas, setTotalFirmas] = useState(0);
   const { perfil } = useAuth();
 
-  const [reporteIA, setReporteIA] = useState("");
+  const [reporteIA, setReporteIA] = useState({ contenido: "", fecha: null });
   const [generandoReporte, setGenerandoReporte] = useState(false);
 
   // Cargar el último reporte ejecutivo IA al iniciar
@@ -29,13 +29,16 @@ export default function AdminDashboardView() {
     (async () => {
       const { data, error } = await supabase
         .from("reportes_ejecutivos_ia")
-        .select("contenido_reporte")
+        .select("contenido_reporte, fecha_generacion")
         .eq("id_entidad", perfil.id_entidad)
         .order("fecha_generacion", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (!error && data) {
-        setReporteIA(data.contenido_reporte);
+        setReporteIA({
+          contenido: data.contenido_reporte,
+          fecha: data.fecha_generacion
+        });
       }
     })();
   }, [perfil?.id_entidad]);
@@ -45,7 +48,10 @@ export default function AdminDashboardView() {
     setGenerandoReporte(true);
     try {
       const texto = await generarReporteEjecutivoSemanal(perfil.id_entidad);
-      setReporteIA(texto);
+      setReporteIA({
+        contenido: texto,
+        fecha: new Date().toISOString()
+      });
     } catch (e) {
       console.error("Error al generar reporte semanal con IA:", e);
     } finally {
@@ -229,10 +235,17 @@ export default function AdminDashboardView() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
-              <span>🤖</span> Reportes Ejecutivos IA
-            </h2>
-            <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '13px', fontWeight: '500' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+                <span>🤖</span> Reportes Ejecutivos IA
+              </h2>
+              {reporteIA.fecha && (
+                <span style={{ fontSize: '11px', color: '#94a3b8', background: '#1e293b', padding: '4px 10px', borderRadius: '20px', fontWeight: '700' }}>
+                  Compilado: {new Date(reporteIA.fecha).toLocaleDateString('es-NI', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+            <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '13px', fontWeight: '500' }}>
               Genera informes ejecutivos de planeación urbana y sugiere priorización de recursos basándose en tendencias semanales.
             </p>
           </div>
@@ -250,16 +263,16 @@ export default function AdminDashboardView() {
           </button>
         </div>
 
-        {reporteIA ? (
+        {reporteIA.contenido ? (
           <div style={{
-            background: '#1e293b', borderRadius: '12px', padding: '18px',
+            background: '#1e293b', borderRadius: '12px', padding: '20px',
             border: '1px solid #334155', fontSize: '13px', color: '#e2e8f0', lineHeight: 1.6,
-            whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto'
+            maxHeight: '300px', overflowY: 'auto'
           }}>
-            {reporteIA}
+            {renderizarMarkdown(reporteIA.contenido)}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>
+          <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '13px', fontWeight: '600', background: '#1e293b', borderRadius: '12px' }}>
             ℹ️ Aún no se ha generado ningún reporte ejecutivo para esta entidad. Haz click en el botón superior para compilar uno nuevo.
           </div>
         )}
@@ -579,4 +592,43 @@ export default function AdminDashboardView() {
       </div>
     </section>
   );
+}
+
+function renderizarMarkdown(texto) {
+  if (!texto) return null;
+  const lineas = texto.split('\n');
+  return lineas.map((linea, idx) => {
+    if (linea.startsWith('###')) {
+      return <h4 key={idx} style={{ margin: '14px 0 8px', color: '#10b981', fontWeight: '800', fontSize: '14px' }}>{linea.replace('###', '').trim()}</h4>;
+    }
+    if (linea.startsWith('##')) {
+      return <h3 key={idx} style={{ margin: '18px 0 10px', color: '#38bdf8', fontWeight: '800', fontSize: '16px' }}>{linea.replace('##', '').trim()}</h3>;
+    }
+    if (linea.startsWith('#')) {
+      return <h2 key={idx} style={{ margin: '22px 0 12px', color: '#60a5fa', fontWeight: '800', fontSize: '18px' }}>{linea.replace('#', '').trim()}</h2>;
+    }
+    if (linea.trim().startsWith('-') || linea.trim().startsWith('*')) {
+      const limpio = linea.replace(/^[\s-*]+/, '').trim();
+      return (
+        <li key={idx} style={{ marginLeft: '16px', marginBottom: '6px', color: '#e2e8f0' }}>
+          {formatearNegritas(limpio)}
+        </li>
+      );
+    }
+    return (
+      <p key={idx} style={{ margin: '0 0 10px', color: '#cbd5e1' }}>
+        {formatearNegritas(linea)}
+      </p>
+    );
+  });
+}
+
+function formatearNegritas(texto) {
+  const partes = texto.split('**');
+  return partes.map((parte, i) => {
+    if (i % 2 === 1) {
+      return <strong key={i} style={{ color: '#fff', fontWeight: '700' }}>{parte}</strong>;
+    }
+    return parte;
+  });
 }

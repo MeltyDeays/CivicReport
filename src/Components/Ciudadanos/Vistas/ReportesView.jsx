@@ -65,12 +65,23 @@ export default function CiudadanoReportesView() {
   };
 
   const guardarReporte = async (payload) => {
-    if (modoFormulario === "editar" && reporteEnEdicion?.id) {
-      const actualizado = await actualizar(reporteEnEdicion.id, payload);
-      setReporteSeleccionado(actualizado);
-      return;
+    try {
+      if (modoFormulario === "editar" && reporteEnEdicion?.id) {
+        const actualizado = await actualizar(reporteEnEdicion.id, payload);
+        setReporteSeleccionado(actualizado);
+        setModalFormularioAbierto(false);
+        return;
+      }
+      await crear(payload);
+      setModalFormularioAbierto(false);
+    } catch (error) {
+      if (error.message.includes("[DUPLICADO_DETECTADO]")) {
+        const msgLimpio = error.message.replace("[DUPLICADO_DETECTADO]", "").trim();
+        alert(msgLimpio);
+      } else {
+        alert("Ocurrió un error al guardar el reporte: " + error.message);
+      }
     }
-    await crear(payload);
   };
 
   const borrarReporte = async (reporte) => {
