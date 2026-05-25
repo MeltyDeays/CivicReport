@@ -409,8 +409,8 @@ export default function AdminDashboardView() {
                 transition: 'background 0.15s',
                 background: 'transparent'
               }}
-              onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
               >
                 <span style={{ fontSize: '18px' }}>{link.icon}</span>
                 <span style={{ flex: 1 }}>{link.label}</span>
@@ -449,8 +449,8 @@ export default function AdminDashboardView() {
                   padding: '12px 14px', borderRadius: '12px',
                   transition: 'background 0.15s'
                 }}
-                onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
-                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                  onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                 >
                   {/* Thumbnail */}
                   <div style={{
@@ -511,10 +511,10 @@ export default function AdminDashboardView() {
               )}
             </h3>
             {noLeidas > 0 && (
-              <button 
+              <button
                 onClick={marcarTodasLeidas}
                 style={{
-                  fontSize: '12px', color: '#3b82f6', fontWeight: '600', 
+                  fontSize: '12px', color: '#3b82f6', fontWeight: '600',
                   background: 'transparent', border: 'none', cursor: 'pointer'
                 }}
               >
@@ -522,7 +522,7 @@ export default function AdminDashboardView() {
               </button>
             )}
           </div>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
             {notificaciones.length === 0 ? (
               <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
@@ -533,9 +533,9 @@ export default function AdminDashboardView() {
                 const esCritica = n.tipo === 'critica';
                 const colorBorde = esCritica ? '#ef4444' : '#3b82f6';
                 const fondoLeida = n.leida ? 'transparent' : (esCritica ? '#fef2f2' : '#eff6ff');
-                
+
                 const getIcono = (tipo) => {
-                  switch(tipo) {
+                  switch (tipo) {
                     case 'critica': return '🚨';
                     case 'asignacion': return '👤';
                     case 'cambio_estado': return '🔄';
@@ -546,7 +546,7 @@ export default function AdminDashboardView() {
                 return (
                   <div key={n.id} style={{
                     display: 'flex', gap: '12px', padding: '12px', borderRadius: '8px',
-                    background: fondoLeida, 
+                    background: fondoLeida,
                     borderWidth: '1px',
                     borderStyle: 'solid',
                     borderColor: n.leida ? '#e2e8f0' : 'transparent',
@@ -565,17 +565,17 @@ export default function AdminDashboardView() {
                           {new Date(n.creado_el).toLocaleDateString('es-NI', { day: 'numeric', month: 'short' })}
                         </div>
                       </div>
-                      <div style={{ 
+                      <div style={{
                         fontSize: '12px', color: '#64748b', marginTop: '4px',
                         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
                       }}>
                         {n.mensaje}
                       </div>
                       {!n.leida && (
-                        <button 
+                        <button
                           onClick={() => marcarLeida(n.id)}
                           style={{
-                            marginTop: '8px', fontSize: '11px', color: '#3b82f6', 
+                            marginTop: '8px', fontSize: '11px', color: '#3b82f6',
                             background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: '600'
                           }}
                         >

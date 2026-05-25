@@ -13,7 +13,7 @@ if (GROQ_API_KEY) {
     baseURL: "https://api.groq.com/openai/v1",
     apiKey: GROQ_API_KEY,
   });
-  MODELO_IA = groq("llama-3.3-70b-specdec");
+  MODELO_IA = groq("llama-3.3-70b-versatile");
 }
 
 /**
@@ -197,6 +197,15 @@ async function aplicarDescuentoInventario(entidadId, materialId, cantidadADescue
  */
 export async function generarReporteEjecutivoSemanal(entidadId) {
   try {
+    // Obtener información de la entidad
+    const { data: entidad, error: errEnt } = await supabase
+      .from("entidades_admin")
+      .select("nombre")
+      .eq("id", entidadId)
+      .maybeSingle();
+
+    const nombreEntidad = entidad?.nombre || "la entidad";
+
     // Obtener estadísticas de reportes de la entidad
     const { data: reportes, error: errRep } = await supabase
       .from("denuncias")
@@ -219,10 +228,11 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
       try {
         const response = await generateText({
           model: MODELO_IA,
-          system: `Eres un analista de planeación urbana experto de CivicReport.
-          Tu labor es redactar un reporte ejecutivo analítico de nivel gubernamental para la entidad basándote en las estadísticas provistas.
+          system: `Eres un analista de planeación urbana experto de CivicReport para la entidad "${nombreEntidad}". 
+          Tu labor es redactar un reporte ejecutivo analítico de nivel gubernamental basándote exclusivamente en las estadísticas y problemáticas provistas que corresponden a tu entidad. 
+          Está estrictamente prohibido mencionar, sugerir o redactar acciones sobre otras competencias ajenas a "${nombreEntidad}". 
           Sé formal, constructivo e identifica áreas críticas de enfoque.`,
-          prompt: `Estadísticas de denuncias de los últimos días para la entidad:
+          prompt: `Estadísticas de denuncias de los últimos días para la entidad "${nombreEntidad}":
           Total reportes: ${totalSemanales}
           Desglose por categorías: ${categoriasStr}`,
         });
@@ -235,12 +245,12 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
 
     if (!reporteEscrito) {
       // Generación automática del reporte usando una plantilla analítica ejecutiva
-      reporteEscrito = `CIVICREPORT - INFORME EJECUTIVO ANALÍTICO DE INFRAESTRUCTURA MUNICIPAL
+      reporteEscrito = `CIVICREPORT - INFORME EJECUTIVO ANALÍTICO: ${nombreEntidad.toUpperCase()}
 
 Durante el período evaluado, la entidad gestionó un total de ${totalSemanales} denuncias ciudadanas activas en la plataforma.
 Análisis de incidencias principales: ${categoriasStr || "Sin registros recientes"}.
 
-Se observa que la mayor concentración de problemáticas se encuentra en el área de infraestructura vial. Se recomienda a la dirección general priorizar el despacho de las cuadrillas base a los focos críticos identificados para maximizar la satisfacción ciudadana y mitigar los tiempos de respuesta.`;
+Se recomienda a la dirección general priorizar el despacho de las cuadrillas base a los focos críticos de "${nombreEntidad}" identificados para maximizar la satisfacción ciudadana y mitigar los tiempos de respuesta.`;
     }
 
     // Insertar el reporte en la tabla de reportes ejecutivos
