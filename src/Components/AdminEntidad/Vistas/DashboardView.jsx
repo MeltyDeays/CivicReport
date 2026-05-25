@@ -4,6 +4,8 @@ import { useReportesAdminEntidad } from "../Controladores/useReportesAdminEntida
 import { supabase } from "../../../core/supabaseClient";
 import { formatearFecha } from "../../../utils/formatters";
 import { useNotificaciones } from "../Controladores/useNotificaciones";
+import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
+import { generarReporteEjecutivoSemanal } from "../../../services/iaService";
 
 const URGENCIA_COLORES = {
   critica: { color: '#ef4444', bg: '#fef2f2', label: 'Crítica' },
@@ -16,6 +18,40 @@ export default function AdminDashboardView() {
   const { items } = useReportesAdminEntidad();
   const { notificaciones, noLeidas, marcarLeida, marcarTodasLeidas } = useNotificaciones();
   const [totalFirmas, setTotalFirmas] = useState(0);
+  const { perfil } = useAuth();
+
+  const [reporteIA, setReporteIA] = useState("");
+  const [generandoReporte, setGenerandoReporte] = useState(false);
+
+  // Cargar el último reporte ejecutivo IA al iniciar
+  useEffect(() => {
+    if (!perfil?.id_entidad) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("reportes_ejecutivos_ia")
+        .select("contenido_reporte")
+        .eq("id_entidad", perfil.id_entidad)
+        .order("fecha_generacion", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!error && data) {
+        setReporteIA(data.contenido_reporte);
+      }
+    })();
+  }, [perfil?.id_entidad]);
+
+  const manejarGenerarReporte = async () => {
+    if (!perfil?.id_entidad) return;
+    setGenerandoReporte(true);
+    try {
+      const texto = await generarReporteEjecutivoSemanal(perfil.id_entidad);
+      setReporteIA(texto);
+    } catch (e) {
+      console.error("Error al generar reporte semanal con IA:", e);
+    } finally {
+      setGenerandoReporte(false);
+    }
+  };
 
   // Contar firmas SOLO de denuncias vinculadas a esta entidad
   useEffect(() => {
@@ -183,6 +219,50 @@ export default function AdminDashboardView() {
         }}>
           Ver Propuestas →
         </Link>
+      </div>
+
+      {/* Sección IA Analítica y Reportes Ejecutivos */}
+      <div style={{
+        background: '#0f172a', borderRadius: '16px', padding: '24px 28px',
+        color: '#fff', marginBottom: '24px', border: '1px solid #1e293b',
+        boxShadow: '0 4px 20px rgba(15,23,42,0.15)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+              <span>🤖</span> Reportes Ejecutivos IA
+            </h2>
+            <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '13px', fontWeight: '500' }}>
+              Genera informes ejecutivos de planeación urbana y sugiere priorización de recursos basándose en tendencias semanales.
+            </p>
+          </div>
+          <button
+            onClick={manejarGenerarReporte}
+            disabled={generandoReporte || !perfil?.id_entidad}
+            style={{
+              background: generandoReporte ? '#1e293b' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px',
+              fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+              boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
+            }}
+          >
+            {generandoReporte ? '⏳ Compilando Reporte...' : '🔄 Generar Reporte Ejecutivo'}
+          </button>
+        </div>
+
+        {reporteIA ? (
+          <div style={{
+            background: '#1e293b', borderRadius: '12px', padding: '18px',
+            border: '1px solid #334155', fontSize: '13px', color: '#e2e8f0', lineHeight: 1.6,
+            whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto'
+          }}>
+            {reporteIA}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>
+            ℹ️ Aún no se ha generado ningún reporte ejecutivo para esta entidad. Haz click en el botón superior para compilar uno nuevo.
+          </div>
+        )}
       </div>
 
       {/* Charts Row */}

@@ -1,5 +1,6 @@
 import { supabase } from "../core/supabaseClient";
 import { aPuntoWkt, parsearPuntoGeo } from "../utils/formatters";
+import { validarReporteAntiSpam } from "./iaService";
 
 const TABLA = "denuncias";
 
@@ -70,6 +71,19 @@ export async function obtenerReportes() {
 export async function crearReporte(payload) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Debes iniciar sesión para reportar.");
+
+  // 1. Validar el reporte en tiempo real con el Agente de IA antes de insertar
+  const evaluacionIA = await validarReporteAntiSpam({
+    titulo: payload.titulo,
+    descripcion: payload.descripcion,
+    lat: payload.lat,
+    lng: payload.lng
+  });
+
+  // Si se detecta un duplicado semántico cercano
+  if (evaluacionIA.esDuplicado) {
+    throw new Error(`[DUPLICADO_DETECTADO] ${evaluacionIA.textoRespuesta}`);
+  }
 
   // La asignación de entidad la maneja el trigger de BD `asignar_entidad_por_categoria`
   // No duplicar lógica en el frontend

@@ -22,6 +22,18 @@ const AVATAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#
 export default function AdminEntidadKanbanView() {
   const vm = useKanbanAdmin();
 
+  const alMover = (id, destino) => {
+    if (destino === 2) {
+      const notas = prompt(
+        "Notas de Cierre de Reparación:\nDetalla los materiales utilizados (ej: 'Se usaron 3 sacos de asfalto caliente'):"
+      );
+      if (notas === null) return;
+      vm.manejarMover(id, destino, notas);
+    } else {
+      vm.manejarMover(id, destino);
+    }
+  };
+
   const agrupado = useMemo(() => {
     return COLUMNAS_KANBAN.map((column) => ({
       ...column,
@@ -278,7 +290,7 @@ export default function AdminEntidadKanbanView() {
                             {column.id > 0 && (
                               <button
                                 disabled={isMoving}
-                                onClick={() => vm.manejarMover(item.id, column.id - 1)}
+                                onClick={() => alMover(item.id, column.id - 1)}
                                 style={{
                                   flex: 1, padding: '8px', borderRadius: '8px',
                                   border: '1px solid #e2e8f0', background: '#f8fafc',
@@ -306,7 +318,7 @@ export default function AdminEntidadKanbanView() {
                             {column.id < 2 && (
                               <button
                                 disabled={isMoving}
-                                onClick={() => vm.manejarMover(item.id, column.id + 1)}
+                                onClick={() => alMover(item.id, column.id + 1)}
                                 style={{
                                   flex: 1, padding: '8px', borderRadius: '8px',
                                   border: '1px solid #dbeafe', background: '#eff6ff',

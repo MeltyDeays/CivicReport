@@ -10,6 +10,7 @@ import {
 import { supabase } from "../../../core/supabaseClient";
 import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
+import { procesarInventarioDesdeTexto } from "../../../services/iaService";
 
 const OCHO_HORAS_MS = 8 * 60 * 60 * 1000;
 
@@ -139,23 +140,35 @@ export function useKanbanAdmin() {
     return { tareasActivas: activas, historial: hist };
   }, [tareas, filtroDept, filtroCity, histFiltroDept, histFiltroCity, histFiltroPrio, histBusqueda]);
 
-  const manejarMover = useCallback(async (idDenuncia, indiceColumna) => {
+  const manejarMover = useCallback(async (idDenuncia, indiceColumna, comentarioCierre = "") => {
     setIdMoviendo(idDenuncia);
     try {
-      await moverTarea(idDenuncia, indiceColumna);
+      await moverTarea(idDenuncia, indiceColumna, comentarioCierre);
+      
+      // Si la columna destino es 'Resuelto' (Índice 2) y hay notas de cierre escritas
+      if (indiceColumna === 2 && comentarioCierre.trim() !== "" && perfil?.id_entidad) {
+        // Ejecutar el agente de inventario para deducir y descontar materiales automáticamente
+        await procesarInventarioDesdeTexto(comentarioCierre, perfil.id_entidad);
+      }
+
       setTareas((prev) =>
         prev.map((t) =>
           t.id === idDenuncia
-            ? { ...t, indice_columna: indiceColumna, fecha_fin: indiceColumna === 2 ? new Date().toISOString() : null }
+            ? { 
+                ...t, 
+                indice_columna: indiceColumna, 
+                fecha_fin: indiceColumna === 2 ? new Date().toISOString() : null,
+                comentario_cierre: comentarioCierre
+              }
             : t
         )
       );
     } catch (e) {
-      console.error(e);
+      console.error("Error al mover tarea en Kanban:", e);
     } finally {
       setIdMoviendo("");
     }
-  }, []);
+  }, [perfil?.id_entidad]);
 
   const manejarQuitar = useCallback(async (idDenuncia) => {
     setIdMoviendo(idDenuncia);

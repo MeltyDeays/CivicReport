@@ -83,7 +83,7 @@ export async function agregarAlTablero(idDenuncia, entidadId) {
  * @param {string} idDenuncia - ID de la denuncia
  * @param {number} indiceColumna - 0=Cola, 1=En Reparación, 2=Completado
  */
-export async function moverTarea(idDenuncia, indiceColumna) {
+export async function moverTarea(idDenuncia, indiceColumna, comentarioCierre = "") {
   const actualizacion = { indice_columna: indiceColumna };
 
   // Si se mueve a "Completado", registrar fecha_fin
@@ -103,14 +103,22 @@ export async function moverTarea(idDenuncia, indiceColumna) {
     throw new Error(`No se pudo mover la tarea: ${error.message}`);
   }
 
-  // También sincronizar el estado en denuncias
+  // También sincronizar el estado en denuncias y guardar el comentario de cierre
   const MAPA_ESTADOS = ["pendiente", "en_reparacion", "completado"];
+  const updateDenuncia = { estado: MAPA_ESTADOS[indiceColumna] || "pendiente" };
+  
+  if (indiceColumna === 2 && comentarioCierre) {
+    updateDenuncia.comentario_cierre = comentarioCierre;
+  } else if (indiceColumna !== 2) {
+    updateDenuncia.comentario_cierre = null;
+  }
+
   await supabase
     .from("denuncias")
-    .update({ estado: MAPA_ESTADOS[indiceColumna] || "pendiente" })
+    .update(updateDenuncia)
     .eq("id", idDenuncia);
 
-  return indiceColumna;
+  return { status: "success" };
 }
 
 /**
