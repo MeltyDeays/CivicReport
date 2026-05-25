@@ -41,7 +41,7 @@ export default function AdminEntidadReportesView() {
   const manejarAgregarTablero = useCallback(async (item) => {
     setAgregando(item.id);
     try {
-      const res = await agregarAlTablero(item.id);
+      const res = await agregarAlTablero(item.id, perfil?.id_entidad);
       if (res.error) {
         alert(res.error);
       } else {
@@ -52,7 +52,7 @@ export default function AdminEntidadReportesView() {
     } finally {
       setAgregando("");
     }
-  }, []);
+  }, [perfil?.id_entidad]);
 
   const manejarAlternarVisibilidad = useCallback(async (item) => {
     try {

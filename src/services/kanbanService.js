@@ -45,7 +45,19 @@ export async function obtenerTareasKanban() {
 /**
  * Agrega una denuncia al tablero Kanban (columna 0 = Cola).
  */
-export async function agregarAlTablero(idDenuncia) {
+export async function agregarAlTablero(idDenuncia, entidadId) {
+  // Si se proporciona entidadId, asignar la denuncia a esa entidad primero
+  if (entidadId) {
+    const { error: updateError } = await supabase
+      .from("denuncias")
+      .update({ entidad_id: entidadId })
+      .eq("id", idDenuncia);
+
+    if (updateError) {
+      console.warn("No se pudo asignar la denuncia a la entidad:", updateError.message);
+    }
+  }
+
   const { data, error } = await supabase
     .from(TABLA_KANBAN)
     .insert([{
