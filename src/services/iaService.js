@@ -311,7 +311,7 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     // 2. Obtener denuncias de la entidad
     const { data: todasDenuncias } = await supabase
       .from("denuncias")
-      .select("estado, categoria, nivel_impacto, creado_el")
+      .select("estado, categoria, prioridad, creado_el")
       .eq("entidad_id", entidadId);
 
     // Filtrar reportes para que contengan únicamente los de la entidad
@@ -363,7 +363,7 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
       if (statsDenuncias[d.estado] !== undefined) statsDenuncias[d.estado]++;
       if (d.categoria) porCategoria[d.categoria] = (porCategoria[d.categoria] || 0) + 1;
       
-      const impactoNormalizado = d.nivel_impacto?.toLowerCase()
+      const impactoNormalizado = (d.prioridad || "media").toLowerCase()
         .replace("crítica", "critica")
         .replace("crítico", "critica")
         .replace("critico", "critica");
