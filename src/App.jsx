@@ -1,29 +1,32 @@
 // Archivo: src/App.jsx
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import DisenoAplicacion from "./Components/AppLayout";
-// AdminEntidad
-import VistaDashboardAdmin from "./Components/AdminEntidad/Vistas/DashboardView";
-import VistaKanbanAdmin from "./Components/AdminEntidad/Vistas/KanbanView";
-import VistaReportesAdmin from "./Components/AdminEntidad/Vistas/ReportesView";
-import VistaMapaCalor from "./Components/AdminEntidad/Vistas/MapaCalorView";
-import VistaInventarioAdmin from "./Components/AdminEntidad/Vistas/InventarioView";
-import VistaEstadisticasAdmin from "./Components/AdminEntidad/Vistas/EstadisticasMaterialesView";
-import VistaSolicitudesAdmin from "./Components/AdminEntidad/Vistas/SolicitudesView";
-import VistaCuadrillasAdmin from "./Components/AdminEntidad/Vistas/CuadrillasView";
-// Ciudadano
-import VistaReportesCiudadano from "./Components/Ciudadanos/Vistas/ReportesView";
-import VistaSugerencias from "./Components/Ciudadanos/Vistas/SugerenciasView";
-// Técnico
-import VistaTareasTecnico from "./Components/Tecnico/Vistas/TareasView";
-import VistaRecursosTecnico from "./Components/Tecnico/Vistas/RecursosView";
-// SuperAdmin
-import VistaSuperAdmin from "./Components/SuperAdmin/Vistas/DashboardView";
-// Auth
-import VistaInicioSesion from "./views/InicioSesionView";
-import VistaRegistro from "./views/RegistroView";
+
+// Importaciones dinámicas (lazy loading) para reducir tamaño de chunks y acelerar carga inicial
+const VistaDashboardAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/DashboardView"));
+const VistaKanbanAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/KanbanView"));
+const VistaReportesAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/ReportesView"));
+const VistaMapaCalor = lazy(() => import("./Components/AdminEntidad/Vistas/MapaCalorView"));
+const VistaInventarioAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/InventarioView"));
+const VistaEstadisticasAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/EstadisticasMaterialesView"));
+const VistaSolicitudesAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/SolicitudesView"));
+const VistaCuadrillasAdmin = lazy(() => import("./Components/AdminEntidad/Vistas/CuadrillasView"));
+
+const VistaReportesCiudadano = lazy(() => import("./Components/Ciudadanos/Vistas/ReportesView"));
+const VistaSugerencias = lazy(() => import("./Components/Ciudadanos/Vistas/SugerenciasView"));
+
+const VistaTareasTecnico = lazy(() => import("./Components/Tecnico/Vistas/TareasView"));
+const VistaRecursosTecnico = lazy(() => import("./Components/Tecnico/Vistas/RecursosView"));
+
+const VistaSuperAdmin = lazy(() => import("./Components/SuperAdmin/Vistas/DashboardView"));
+
+const VistaInicioSesion = lazy(() => import("./views/InicioSesionView"));
+const VistaRegistro = lazy(() => import("./views/RegistroView"));
+const VistaPerfil = lazy(() => import("./views/PerfilView"));
+
 import { useAuth, AuthProvider } from "./modules/auth/controllers/useAuth.jsx";
-import VistaPerfil from "./views/PerfilView";
+
 
 function obtenerVistaPorRol(rolBd) {
   if (rolBd === "ciudadano") return "ciudadano";
@@ -150,7 +153,22 @@ function App() {
 export default function AppWrapper() {
   return (
     <AuthProvider>
-      <App />
+      <Suspense fallback={
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          background: '#0f172a',
+          color: '#94a3b8',
+          fontFamily: 'sans-serif',
+          fontSize: '1.25rem'
+        }}>
+          Cargando módulo...
+        </div>
+      }>
+        <App />
+      </Suspense>
     </AuthProvider>
   );
 }
