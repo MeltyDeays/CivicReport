@@ -311,52 +311,12 @@ export default function AdminDashboardView() {
         </div>
 
         {reporteIA.contenido ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-            {/* Texto del reporte */}
-            <div style={{
-              background: '#1e293b', borderRadius: '12px', padding: '20px',
-              border: '1px solid #334155', fontSize: '13px', color: '#e2e8f0', lineHeight: 1.6,
-              maxHeight: '300px', overflowY: 'auto'
-            }}>
-              {renderizarMarkdown(reporteIA.contenido)}
-            </div>
-
-            {/* Gráfico 100% Confiable */}
-            <div style={{
-              background: '#1e293b', borderRadius: '12px', padding: '20px',
-              border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'center'
-            }}>
-              <h4 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: '800', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                📊 Distribución Real de Incidencias
-              </h4>
-              {Object.keys(reporteIA.datosGrafico || {}).length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {Object.entries(reporteIA.datosGrafico).map(([cat, cant], idx) => {
-                    const total = Object.values(reporteIA.datosGrafico).reduce((a, b) => a + b, 0);
-                    const pct = total > 0 ? Math.round((cant / total) * 100) : 0;
-                    return (
-                      <div key={cat}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>
-                          <span style={{ textTransform: 'capitalize', color: '#e2e8f0' }}>{cat}</span>
-                          <span>{cant} ({pct}%)</span>
-                        </div>
-                        <div style={{ width: '100%', height: '8px', background: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{
-                            width: `${pct}%`, height: '100%',
-                            background: `linear-gradient(90deg, hsl(${120 + idx * 40}, 70%, 50%) 0%, hsl(${120 + idx * 40}, 80%, 40%) 100%)`,
-                            borderRadius: '4px', transition: 'width 0.8s ease-in-out'
-                          }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', fontWeight: '600' }}>
-                  No hay incidencias registradas en esta entidad para graficar.
-                </div>
-              )}
-            </div>
+          <div style={{
+            background: '#1e293b', borderRadius: '12px', padding: '24px',
+            border: '1px solid #334155', fontSize: '13.5px', color: '#e2e8f0', lineHeight: 1.65,
+            maxHeight: '350px', overflowY: 'auto'
+          }}>
+            {renderizarMarkdown(reporteIA.contenido)}
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '13px', fontWeight: '600', background: '#1e293b', borderRadius: '12px' }}>
