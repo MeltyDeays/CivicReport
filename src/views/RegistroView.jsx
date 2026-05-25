@@ -48,19 +48,32 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
 
       if (tab === "ciudadano") {
         await alRegistroCiudadano({ email, password, cedula, nombreCompleto });
-        setExito("¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.");
+        setExito("¡Registro exitoso! Revisa tu correo para confirmar tu cuenta. Redirigiendo...");
       } else if (tab === "institucional") {
         if (!codigoInvitacion.trim()) throw new Error("Ingresa el código de invitación.");
         await alRegistroInstitucional({ email, password, nombreCompleto, cedula, codigoInvitacion: codigoInvitacion.trim() });
-        setExito("¡Registro institucional exitoso! Tu cuenta ha sido vinculada.");
+        setExito("¡Registro institucional exitoso! Tu cuenta ha sido vinculada. Redirigiendo...");
       } else if (tab === "tecnico") {
         if (!codigoInvitacion.trim()) throw new Error("Ingresa el código de acceso.");
         await alRegistroTecnico({ email, password, nombreCompleto, cedula, codigoInvitacion: codigoInvitacion.trim() });
-        setExito("¡Registro técnico exitoso! Ya puedes iniciar sesión.");
+        setExito("¡Registro técnico exitoso! Ya puedes iniciar sesión. Redirigiendo...");
       }
+
+      // Limpiar campos
+      setEmail("");
+      setPassword("");
+      setConfirmarPassword("");
+      setCedula("");
+      setNombreCompleto("");
+      setCodigoInvitacion("");
 
       setReverseCanvasVisible(true);
       setTimeout(() => setInitialCanvasVisible(false), 50);
+
+      // Redirigir automáticamente al login después de 3 segundos
+      setTimeout(() => {
+        alIrLogin();
+      }, 3000);
     } catch (e) {
       setError(e.message || "Error al registrarse. Intenta de nuevo.");
     } finally {
