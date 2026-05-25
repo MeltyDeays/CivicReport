@@ -355,7 +355,7 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     }
 
     // 4. Compilar datos analíticos reales y limpios
-    const statsDenuncias = { creado: 0, en_progreso: 0, completado: 0 };
+    const statsDenuncias = { pendiente: 0, en_reparacion: 0, completado: 0 };
     const porCategoria = {};
     const porImpacto = { critica: 0, alta: 0, media: 0, baja: 0 };
 
@@ -408,18 +408,22 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
           {
             "respuesta": "Texto explicativo analítico breve que describe la gráfica y los datos de la entidad.",
             "grafico": {
-              "tipo": "barras",
+              "tipo": "barras" | "columnas" | "dispersion",
               "datos": [
-                { "etiqueta": "Nombre de la Categoría/Estado/Cuadrilla", "valor": 12 }
+                // Para tipo "barras" (horizontal) o "columnas" (vertical):
+                { "etiqueta": "Etiqueta del Item", "valor": 12 }
+                // Para tipo "dispersion" (gráfico de dispersión X-Y):
+                { "etiqueta": "Punto A", "x": 10, "y": 25 }
               ]
             }
           }
           
           Instrucciones de mapeo de datos reales para gráficos:
-          1. Denuncias por Estado: Mapea "denunciasPorEstado" (ej: etiqueta: "Creado", valor: contador).
+          1. Denuncias por Estado: Mapea "denunciasPorEstado" (ej: etiqueta: "Pendiente", valor: contador).
           2. Denuncias por Categoría: Mapea "denunciasPorCategoria" (ej: etiqueta: nombre de la categoría, valor: contador).
           3. Denuncias por Nivel de Impacto: Mapea "denunciasPorNivelImpacto" (ej: etiqueta: "Critica" | "Alta" | "Media" | "Baja", valor: contador).
           4. Resolución de Cuadrillas: Mapea "resolucionCuadrillas" (ej: etiqueta: nombre de la cuadrilla, valor: resolucionPct).
+          5. Gráfico de Dispersión: Asigna valores coherentes para X e Y (ej: X=cantidad de reportes completados, Y=resolucionPct o nivel de prioridad mapeado a numero: Critica=80, Alta=60, Media=40, Baja=20).
 
           Si no hay datos registrados (valores en 0), genera de todos modos el gráfico con valores en 0 e indícale amigablemente en "respuesta" cómo puede registrar denuncias o asignar cuadrillas para empezar.
           Si el usuario NO te pide visualizar, graficar ni ver datos, responde en texto plano de manera directa sin formato JSON.`,
