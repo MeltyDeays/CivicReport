@@ -248,9 +248,9 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
         const response = await generateText({
           model: MODELO_IA,
           system: `Eres un analista de planeación urbana experto de CivicReport para la entidad "${nombreEntidad}". 
-          Tu labor es redactar un reporte ejecutivo analítico de nivel gubernamental basándote exclusivamente en las estadísticas y problemáticas provistas que corresponden a tu entidad. 
-          Está estrictamente prohibido mencionar, sugerir o redactar acciones sobre otras competencias ajenas a "${nombreEntidad}". 
-          Sé formal, constructivo e identifica áreas críticas de enfoque.`,
+          Tu labor es redactar un reporte ejecutivo analítico gubernamental basándote exclusivamente en las estadísticas provistas. 
+          Sé formal, constructivo, sumamente conciso (máximo 3 párrafos cortos, no más de 120 palabras en total, directo al grano sin introducciones largas ni conclusiones redundantes). 
+          Está estrictamente prohibido mencionar o sugerir acciones sobre otras competencias ajenas a "${nombreEntidad}".`,
           prompt: `Estadísticas de denuncias de los últimos días para la entidad "${nombreEntidad}":
           Total reportes: ${totalSemanales}
           Desglose por categorías: ${categoriasStr}`,
@@ -266,21 +266,28 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
       // Generación automática del reporte usando una plantilla analítica ejecutiva
       reporteEscrito = `CIVICREPORT - INFORME EJECUTIVO ANALÍTICO: ${nombreEntidad.toUpperCase()}
 
-Durante el período evaluado, la entidad gestionó un total de ${totalSemanales} denuncias ciudadanas activas en la plataforma.
+Durante el período evaluado, la entidad gestionó un total de ${totalSemanales} denuncias ciudadanas activas.
 Análisis de incidencias principales: ${categoriasStr || "Sin registros recientes"}.
 
-Se recomienda a la dirección general priorizar el despacho de las cuadrillas base a los focos críticos de "${nombreEntidad}" identificados para maximizar la satisfacción ciudadana y mitigar los tiempos de respuesta.`;
+Se sugiere priorizar recursos hacia las categorías de mayor impacto en "${nombreEntidad}" para optimizar el tiempo de respuesta.`;
     }
 
-    // Insertar el reporte en la tabla de reportes ejecutivos
+    // Insertar el reporte en la tabla de reportes ejecutivos con su correspondiente gráfico
     await supabase.from("reportes_ejecutivos_ia").insert([{
       id_entidad: entidadId,
-      contenido_reporte: reporteEscrito
+      contenido_reporte: reporteEscrito,
+      datos_grafico: porCategoria
     }]);
 
-    return reporteEscrito;
+    return {
+      contenido: reporteEscrito,
+      datosGrafico: porCategoria
+    };
   } catch (e) {
     console.error("Error en agente de Alertas Ejecutivas:", e.message);
-    return "No se pudo generar el reporte analítico en este momento.";
+    return {
+      contenido: "No se pudo generar el reporte analítico en este momento.",
+      datosGrafico: {}
+    };
   }
 }

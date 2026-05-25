@@ -20,7 +20,7 @@ export default function AdminDashboardView() {
   const [totalFirmas, setTotalFirmas] = useState(0);
   const { perfil } = useAuth();
 
-  const [reporteIA, setReporteIA] = useState({ contenido: "", fecha: null });
+  const [reporteIA, setReporteIA] = useState({ contenido: "", fecha: null, datosGrafico: {} });
   const [generandoReporte, setGenerandoReporte] = useState(false);
 
   // Cargar el último reporte ejecutivo IA al iniciar
@@ -29,7 +29,7 @@ export default function AdminDashboardView() {
     (async () => {
       const { data, error } = await supabase
         .from("reportes_ejecutivos_ia")
-        .select("contenido_reporte, fecha_generacion")
+        .select("contenido_reporte, fecha_generacion, datos_grafico")
         .eq("id_entidad", perfil.id_entidad)
         .order("fecha_generacion", { ascending: false })
         .limit(1)
@@ -37,7 +37,8 @@ export default function AdminDashboardView() {
       if (!error && data) {
         setReporteIA({
           contenido: data.contenido_reporte,
-          fecha: data.fecha_generacion
+          fecha: data.fecha_generacion,
+          datosGrafico: data.datos_grafico || {}
         });
       }
     })();
@@ -47,16 +48,45 @@ export default function AdminDashboardView() {
     if (!perfil?.id_entidad) return;
     setGenerandoReporte(true);
     try {
-      const texto = await generarReporteEjecutivoSemanal(perfil.id_entidad);
+      const res = await generarReporteEjecutivoSemanal(perfil.id_entidad);
       setReporteIA({
-        contenido: texto,
-        fecha: new Date().toISOString()
+        contenido: res.contenido,
+        fecha: new Date().toISOString(),
+        datosGrafico: res.datosGrafico || {}
       });
     } catch (e) {
       console.error("Error al generar reporte semanal con IA:", e);
     } finally {
       setGenerandoReporte(false);
     }
+  };
+
+  const exportarAWord = () => {
+    if (!reporteIA.contenido) return;
+    const cabecera = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>Reporte Ejecutivo CivicReport</title><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #334155; } h2 { color: #10b981; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; } p, li { font-size: 11pt; }</style></head><body>";
+    const pie = "</body></html>";
+    
+    // Obtener contenido plano y formatearlo como html basico para Word
+    const lineas = reporteIA.contenido.split('\n');
+    let htmlContenido = `<h2>INFORME EJECUTIVO ANALÍTICO - ${perfil?.nombre_entidad || 'CIVICREPORT'}</h2>`;
+    lineas.forEach(l => {
+      if (l.trim().startsWith('-') || l.trim().startsWith('*')) {
+        htmlContenido += `<li>${l.replace(/^[\s-*]+/, '').trim()}</li>`;
+      } else if (l.trim()) {
+        htmlContenido += `<p>${l}</p>`;
+      }
+    });
+
+    const html = cabecera + htmlContenido + pie;
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Reporte_Ejecutivo_${new Date().toISOString().substring(0, 10)}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Contar firmas SOLO de denuncias vinculadas a esta entidad
@@ -249,27 +279,84 @@ export default function AdminDashboardView() {
               Genera informes ejecutivos de planeación urbana y sugiere priorización de recursos basándose en tendencias semanales.
             </p>
           </div>
-          <button
-            onClick={manejarGenerarReporte}
-            disabled={generandoReporte || !perfil?.id_entidad}
-            style={{
-              background: generandoReporte ? '#1e293b' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px',
-              fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-              boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
-            }}
-          >
-            {generandoReporte ? '⏳ Compilando Reporte...' : '🔄 Generar Reporte Ejecutivo'}
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {reporteIA.contenido && (
+              <button
+                onClick={exportarAWord}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff', border: '1px solid rgba(255, 255, 255, 0.2)', padding: '10px 20px', borderRadius: '10px',
+                  fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                  transition: 'background 0.2s'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+              >
+                📥 Exportar Word
+              </button>
+            )}
+            <button
+              onClick={manejarGenerarReporte}
+              disabled={generandoReporte || !perfil?.id_entidad}
+              style={{
+                background: generandoReporte ? '#1e293b' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px',
+                fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
+              }}
+            >
+              {generandoReporte ? '⏳ Compilando Reporte...' : '🔄 Generar Reporte Ejecutivo'}
+            </button>
+          </div>
         </div>
 
         {reporteIA.contenido ? (
-          <div style={{
-            background: '#1e293b', borderRadius: '12px', padding: '20px',
-            border: '1px solid #334155', fontSize: '13px', color: '#e2e8f0', lineHeight: 1.6,
-            maxHeight: '300px', overflowY: 'auto'
-          }}>
-            {renderizarMarkdown(reporteIA.contenido)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            {/* Texto del reporte */}
+            <div style={{
+              background: '#1e293b', borderRadius: '12px', padding: '20px',
+              border: '1px solid #334155', fontSize: '13px', color: '#e2e8f0', lineHeight: 1.6,
+              maxHeight: '300px', overflowY: 'auto'
+            }}>
+              {renderizarMarkdown(reporteIA.contenido)}
+            </div>
+
+            {/* Gráfico 100% Confiable */}
+            <div style={{
+              background: '#1e293b', borderRadius: '12px', padding: '20px',
+              border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'center'
+            }}>
+              <h4 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: '800', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📊 Distribución Real de Incidencias
+              </h4>
+              {Object.keys(reporteIA.datosGrafico || {}).length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {Object.entries(reporteIA.datosGrafico).map(([cat, cant], idx) => {
+                    const total = Object.values(reporteIA.datosGrafico).reduce((a, b) => a + b, 0);
+                    const pct = total > 0 ? Math.round((cant / total) * 100) : 0;
+                    return (
+                      <div key={cat}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>
+                          <span style={{ textTransform: 'capitalize', color: '#e2e8f0' }}>{cat}</span>
+                          <span>{cant} ({pct}%)</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${pct}%`, height: '100%',
+                            background: `linear-gradient(90deg, hsl(${120 + idx * 40}, 70%, 50%) 0%, hsl(${120 + idx * 40}, 80%, 40%) 100%)`,
+                            borderRadius: '4px', transition: 'width 0.8s ease-in-out'
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', fontWeight: '600' }}>
+                  No hay incidencias registradas en esta entidad para graficar.
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '13px', fontWeight: '600', background: '#1e293b', borderRadius: '12px' }}>
