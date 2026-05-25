@@ -291,3 +291,106 @@ Se sugiere priorizar recursos hacia las categorías de mayor impacto en "${nombr
     };
   }
 }
+
+/**
+ * Agente de Chatbot Analítico: CivicReport's Bot
+ * Procesa consultas del administrador en lenguaje natural y devuelve texto y datos estructurados para graficación en base a la entidad logueada.
+ */
+export async function procesarConsultaChatbot(mensaje, entidadId) {
+  try {
+    // 1. Obtener denuncias de la entidad
+    const { data: denuncias } = await supabase
+      .from("denuncias")
+      .select("estado, categoria")
+      .eq("entidad_id", entidadId);
+
+    // 2. Obtener cuadrillas y sus tareas asignadas
+    const { data: cuadrillas } = await supabase
+      .from("cuadrilla_obra")
+      .select("id, nombre")
+      .eq("entidad_id", entidadId);
+
+    const idsCuadrillas = (cuadrillas || []).map(c => c.id);
+    let tareas = [];
+    if (idsCuadrillas.length > 0) {
+      const { data: tareasRes } = await supabase
+        .from("tareas_cuadrilla")
+        .select("estado, id_cuadrilla")
+        .in("id_cuadrilla", idsCuadrillas);
+      tareas = tareasRes || [];
+    }
+
+    // 3. Compilar datos analíticos reales
+    const statsDenuncias = { creado: 0, en_progreso: 0, completado: 0 };
+    const porCategoria = {};
+    (denuncias || []).forEach(d => {
+      if (statsDenuncias[d.estado] !== undefined) statsDenuncias[d.estado]++;
+      if (d.categoria) porCategoria[d.categoria] = (porCategoria[d.categoria] || 0) + 1;
+    });
+
+    const statsCuadrillas = (cuadrillas || []).map(c => {
+      const tareasCuadrilla = tareas.filter(t => t.id_cuadrilla === c.id);
+      const total = tareasCuadrilla.length;
+      const completadas = tareasCuadrilla.filter(t => t.estado === "completado").length;
+      const resolucionPct = total > 0 ? Math.round((completadas / total) * 100) : 0;
+      return { nombre: c.nombre, total, completadas, resolucionPct };
+    });
+
+    const contextoDatos = {
+      denunciasPorEstado: statsDenuncias,
+      denunciasPorCategoria: porCategoria,
+      resolucionCuadrillas: statsCuadrillas
+    };
+
+    let respuestaTexto = "";
+    let graficoDetectado = null;
+
+    if (MODELO_IA) {
+      try {
+        const response = await generateText({
+          model: MODELO_IA,
+          system: `Eres el Bot de IA oficial de CivicReport ("CivicReport's Bot").
+          Tu rol es conversar y responder consultas analíticas basándote únicamente en los datos reales de la entidad del administrador logueado.
+          Los datos actuales de la entidad son: ${JSON.stringify(contextoDatos)}.
+          
+          Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
+          {
+            "respuesta": "Texto explicativo breve que acompaña al gráfico.",
+            "grafico": {
+              "tipo": "barras",
+              "datos": [
+                { "etiqueta": "Nombre del Item", "valor": 10 }
+              ]
+            }
+          }
+          Si el usuario NO te pide visualizar, graficar ni ver datos, responde en texto plano de manera directa (por ejemplo, dando sugerencias, respondiendo dudas sobre el sistema, etc.) sin formato JSON.`,
+          prompt: mensaje
+        });
+
+        const respuestaLimpia = response.text.trim();
+        if (respuestaLimpia.startsWith("{") && respuestaLimpia.endsWith("}")) {
+          try {
+            const parsed = JSON.parse(respuestaLimpia);
+            respuestaTexto = parsed.respuesta;
+            graficoDetectado = parsed.grafico;
+          } catch {
+            respuestaTexto = respuestaLimpia;
+          }
+        } else {
+          respuestaTexto = respuestaLimpia;
+        }
+      } catch (e) {
+        console.error("Error al procesar mensaje con Groq:", e);
+      }
+    }
+
+    if (!respuestaTexto) {
+      respuestaTexto = "Hola, soy el asistente virtual de CivicReport. Puedo ayudarte a graficar la distribución de denuncias o evaluar la productividad de las cuadrillas. Prueba escribiendo: 'grafica las denuncias por estado'.";
+    }
+
+    return { texto: respuestaTexto, grafico: graficoDetectado };
+  } catch (err) {
+    console.error("Error en procesarConsultaChatbot:", err);
+    return { texto: "Ocurrió un error en el asistente virtual de CivicReport.", grafico: null };
+  }
+}
