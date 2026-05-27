@@ -19,13 +19,139 @@ const enlacesSuperAdmin = [{ to: "/super/dashboard", label: "Dashboard", icon: "
 function RenderizadorGraficos({ grafico }) {
   if (!grafico || !grafico.datos || !Array.isArray(grafico.datos)) return null;
 
+  const [idUnico] = useState(() => 'grafico_' + Math.random().toString(36).substring(2, 9));
+
+  const descargarComoImagen = (tipoGrafico, id) => {
+    const svgEl = document.querySelector(`#${id} svg`);
+    if (!svgEl) return;
+
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgEl);
+    
+    if (!svgString.match(/^<svg[^>]+xmlns="http\/\/www\.w3\.org\/2000\/svg"/)) {
+      svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const bounding = svgEl.getBoundingClientRect();
+      canvas.width = bounding.width || 350;
+      canvas.height = bounding.height || 180;
+      const ctx = canvas.getContext('2d');
+      
+      // Fondo premium del gráfico
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+
+      const a = document.createElement('a');
+      a.download = `grafico_${tipoGrafico}_civicreport.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+
+    img.src = url;
+  };
+
+  const descargarComoExcel = (tipoGrafico, datos, id) => {
+    const svgEl = document.querySelector(`#${id} svg`);
+    let svgHtml = '';
+    if (svgEl) {
+      const serializer = new XMLSerializer();
+      svgHtml = serializer.serializeToString(svgEl);
+      // Ajustar dimensiones en Excel
+      svgHtml = svgHtml.replace(/width="[^"]+"/, 'width="350"').replace(/height="[^"]+"/, 'height="180"');
+    }
+
+    const filasHtml = datos.map(d => `
+      <tr>
+        <td style="background: #1e293b; color: #cbd5e1; font-weight: bold; border: 1px solid #334155; padding: 6px;">${d.etiqueta || ''}</td>
+        <td style="color: #10b981; font-weight: bold; text-align: right; border: 1px solid #334155; padding: 6px;">${d.valor !== undefined ? d.valor : `X: ${d.x}, Y: ${d.y}`}</td>
+      </tr>
+    `).join('');
+
+    const htmlCompleto = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #090d16; color: #ffffff; }
+          table { border-collapse: collapse; }
+          th { background-color: #0f172a; color: #38bdf8; font-weight: bold; border: 1px solid #1e293b; padding: 8px; }
+          td { border: 1px solid #1e293b; padding: 8px; }
+        </style>
+      </head>
+      <body>
+        <h2>Reporte de Datos y Gráficos - CivicReport</h2>
+        <br/>
+        <table>
+          <tr>
+            <td valign="top">
+              <table style="border: 1px solid #334155;">
+                <thead>
+                  <tr>
+                    <th style="background-color: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 6px;">Etiqueta</th>
+                    <th style="background-color: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 6px;">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${filasHtml}
+                </tbody>
+              </table>
+            </td>
+            <td valign="top" style="padding-left: 30px; background-color: #090d16;">
+              ${svgHtml}
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([htmlCompleto], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = `reporte_grafico_${tipoGrafico}_civicreport.xls`;
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div style={{
+    <div id={idUnico} style={{
       marginTop: '12px', background: '#0f172a', padding: '14px',
       borderRadius: '12px', border: '1px solid #1e293b', color: '#fff'
     }}>
-      <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: '800', letterSpacing: '0.5px', marginBottom: '10px', textTransform: 'uppercase' }}>
-        📊 Gráfico Generado ({grafico.tipo || 'barras'})
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          📊 Gráfico Generado ({grafico.tipo || 'barras'})
+        </div>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            onClick={() => descargarComoImagen(grafico.tipo, idUnico)}
+            title="Descargar gráfico como Imagen PNG"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 6px', fontSize: '9px', color: '#cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '700', transition: 'all 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+          >
+            🖼️ PNG
+          </button>
+          <button
+            onClick={() => descargarComoExcel(grafico.tipo, grafico.datos, idUnico)}
+            title="Descargar Datos + Gráfico a Excel (.xls)"
+            style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', padding: '2px 6px', fontSize: '9px', color: '#10b981', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '700', transition: 'all 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(16,185,129,0.25)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(16,185,129,0.15)'}
+          >
+            📊 Excel
+          </button>
+        </div>
       </div>
 
       {/* Caso 1: Gráfico de Dispersión (dispersion) */}
