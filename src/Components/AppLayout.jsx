@@ -28,32 +28,63 @@ function RenderizadorGraficos({ grafico }) {
     const serializer = new XMLSerializer();
     let svgString = serializer.serializeToString(svgEl);
     
-    if (!svgString.match(/^<svg[^>]+xmlns="http\/\/www\.w3\.org\/2000\/svg"/)) {
-      svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    // Validar de forma robusta la presencia del atributo xmlns
+    if (!svgString.includes('xmlns=')) {
+      svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
     }
+
+    // Reemplazar dimensiones relativas por fijas para renderizado universal en canvas
+    svgString = svgString
+      .replace(/width="100%"/g, 'width="500"')
+      .replace(/height="100%"/g, 'height="260"');
+
+    if (!svgString.includes('width=')) {
+      svgString = svgString.replace(/^<svg/, '<svg width="500" height="260"');
+    }
+
+    const descargarDirectoSVG = () => {
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const a = document.createElement('a');
+      a.download = `grafico_${tipoGrafico}_civicreport.svg`;
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
     const img = new Image();
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const bounding = svgEl.getBoundingClientRect();
-      canvas.width = bounding.width || 350;
-      canvas.height = bounding.height || 180;
-      const ctx = canvas.getContext('2d');
-      
-      // Fondo premium del gráfico
-      ctx.fillStyle = '#090d16';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 500;
+        canvas.height = 260;
+        const ctx = canvas.getContext('2d');
+        
+        // Fondo oscuro premium
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
 
-      const a = document.createElement('a');
-      a.download = `grafico_${tipoGrafico}_civicreport.png`;
-      a.href = canvas.toDataURL('image/png');
-      a.click();
+        const a = document.createElement('a');
+        a.download = `grafico_${tipoGrafico}_civicreport.png`;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      } catch (err) {
+        console.warn("Canvas bloqueado por seguridad o error de dibujado, descargando SVG directo...", err);
+        URL.revokeObjectURL(url);
+        descargarDirectoSVG();
+      }
+    };
+
+    img.onerror = (err) => {
+      console.warn("Error cargando la imagen SVG en canvas, descargando SVG directamente...", err);
+      URL.revokeObjectURL(url);
+      descargarDirectoSVG();
     };
 
     img.src = url;

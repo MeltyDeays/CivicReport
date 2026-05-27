@@ -224,14 +224,8 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
 
     if (errRep) throw errRep;
 
-    // Filtrar reportes para que contengan únicamente los de la entidad
-    const reportesFiltrados = (reportes || []).filter(r => {
-      if (!r.categoria) return false;
-      // Si no hay categorías configuradas para la entidad, permitimos todos para evitar reportes vacíos,
-      // pero si hay configuradas, restringimos estrictamente a ellas.
-      if (categoriasValidas.length === 0) return true;
-      return categoriasValidas.includes(r.categoria.toLowerCase());
-    });
+    // Usar directamente todas las denuncias asociadas a la entidad
+    const reportesFiltrados = reportes || [];
 
     // Calcular métricas locales
     const totalSemanales = reportesFiltrados.length;
@@ -314,12 +308,8 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
       .select("estado, categoria, prioridad, creado_el, municipio, departamento")
       .eq("entidad_id", entidadId);
 
-    // Filtrar reportes para que contengan únicamente los de la entidad
-    const denuncias = (todasDenuncias || []).filter(r => {
-      if (!r.categoria) return false;
-      if (categoriasValidas.length === 0) return true;
-      return categoriasValidas.includes(r.categoria.toLowerCase());
-    });
+    // Usar directamente todas las denuncias asociadas a la entidad
+    const denuncias = todasDenuncias || [];
 
     // 3. Obtener cuadrillas y calcular su resolución usando cuadrillas_base, cuadrilla_miembros y tareas_kanban
     const { data: cuadrillasBase } = await supabase
