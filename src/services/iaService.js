@@ -16,6 +16,27 @@ if (GROQ_API_KEY) {
   MODELO_IA = groq("llama-3.3-70b-versatile");
 }
 
+const MAPA_SINONIMOS = {
+  "fallo de luz": ["fallo de luz", "alumbrado", "electricidad", "luz"],
+  "baches": ["baches", "bache", "calle", "carretera", "asfalto", "vía", "pavimento"],
+  "fuga de agua": ["fuga de agua", "agua", "tubería", "tubo", "alcantarillado", "hidrante", "inundación"],
+  "basura": ["basura", "desechos", "limpieza", "vertedero", "residuos", "basurero"]
+};
+
+export function perteneceAProblematica(categoria, problematicaNombre) {
+  if (!categoria || !problematicaNombre) return false;
+  const catLower = categoria.toLowerCase().trim();
+  const probLower = problematicaNombre.toLowerCase().trim();
+  
+  if (catLower === probLower) return true;
+  
+  const sinonimos = MAPA_SINONIMOS[probLower];
+  if (sinonimos && sinonimos.some(s => catLower.includes(s) || s.includes(catLower))) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * CASO DE USO 2: Filtro de Moderación Semántica y Anti-Spam
  * Compara reportes entrantes con reportes existentes geolocalizados en PostGIS
@@ -224,8 +245,12 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
 
     if (errRep) throw errRep;
 
-    // Usar directamente todas las denuncias asociadas a la entidad
-    const reportesFiltrados = reportes || [];
+    // Filtrar reportes para que correspondan únicamente a las problemáticas designadas a la entidad
+    const reportesFiltrados = (reportes || []).filter(r => {
+      if (!r.categoria) return false;
+      if (categoriasValidas.length === 0) return true;
+      return categoriasValidas.some(catValida => perteneceAProblematica(r.categoria, catValida));
+    });
 
     // Calcular métricas locales
     const totalSemanales = reportesFiltrados.length;
@@ -302,14 +327,18 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
       .map(p => p.problematica?.nombre?.toLowerCase())
       .filter(Boolean);
 
-    // 2. Obtener denuncias de la entidad
+    // 2. Obtener denuncias de la entidad y su estado en el Kanban
     const { data: todasDenuncias } = await supabase
       .from("denuncias")
-      .select("estado, categoria, prioridad, creado_el, municipio, departamento")
+      .select("id, estado, categoria, prioridad, creado_el, municipio, departamento, tareas_kanban(indice_columna)")
       .eq("entidad_id", entidadId);
 
-    // Usar directamente todas las denuncias asociadas a la entidad
-    const denuncias = todasDenuncias || [];
+    // Filtrar reportes para que correspondan únicamente a las problemáticas designadas a la entidad
+    const denuncias = (todasDenuncias || []).filter(r => {
+      if (!r.categoria) return false;
+      if (categoriasValidas.length === 0) return true;
+      return categoriasValidas.some(catValida => perteneceAProblematica(r.categoria, catValida));
+    });
 
     // 3. Obtener cuadrillas y calcular su resolución usando cuadrillas_base, cuadrilla_miembros y tareas_kanban
     const { data: cuadrillasBase } = await supabase
@@ -352,7 +381,16 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     const porMunicipio = {};
 
     denuncias.forEach(d => {
-      if (statsDenuncias[d.estado] !== undefined) statsDenuncias[d.estado]++;
+      // Determinar estado real basado en el Kanban
+      let estadoReal = d.estado;
+      const tk = d.tareas_kanban && d.tareas_kanban[0];
+      if (tk) {
+        if (tk.indice_columna === 0) estadoReal = "pendiente";
+        else if (tk.indice_columna === 1) estadoReal = "en_reparacion";
+        else if (tk.indice_columna === 2) estadoReal = "completado";
+      }
+
+      if (statsDenuncias[estadoReal] !== undefined) statsDenuncias[estadoReal]++;
       if (d.categoria) porCategoria[d.categoria] = (porCategoria[d.categoria] || 0) + 1;
       
       const impactoNormalizado = (d.prioridad || "media").toLowerCase()
