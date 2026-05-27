@@ -1,9 +1,9 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
 import { useReportesAdminEntidad } from "../Controladores/useReportesAdminEntidad";
 import RepairOrderModal from "../../../modals/RepairOrderModal";
-import { agregarAlTablero } from "../../../services/kanbanService";
+import { agregarAlTablero, obtenerIdsEnTablero } from "../../../services/kanbanService";
 import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 import { formatearFecha } from "../../../utils/formatters";
 import { exportarCSV, toggleVisibilidad } from "../../../services/reportService";
@@ -37,6 +37,10 @@ export default function AdminEntidadReportesView() {
   const [denunciaOrden, setDenunciaOrden] = useState(null);
   const [enTablero, setEnTablero] = useState({});
   const [agregando, setAgregando] = useState("");
+
+  useEffect(() => {
+    obtenerIdsEnTablero().then(mapa => setEnTablero(mapa));
+  }, []);
 
   const manejarAgregarTablero = useCallback(async (item) => {
     setAgregando(item.id);

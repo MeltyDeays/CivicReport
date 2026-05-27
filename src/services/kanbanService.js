@@ -154,6 +154,16 @@ export async function estaEnTablero(idDenuncia) {
   return !!data;
 }
 
+export async function obtenerIdsEnTablero() {
+  const { data } = await supabase
+    .from(TABLA_KANBAN)
+    .select("id_denuncia");
+  
+  const mapa = {};
+  (data || []).forEach(t => { mapa[t.id_denuncia] = true; });
+  return mapa;
+}
+
 export async function asignarResponsable(idDenuncia, idTecnico) {
   const { error } = await supabase
     .from(TABLA_KANBAN)
