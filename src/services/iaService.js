@@ -327,14 +327,34 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
       .map(p => p.problematica?.nombre?.toLowerCase())
       .filter(Boolean);
 
-    // 2. Obtener denuncias de la entidad y su estado en el Kanban
-    const { data: todasDenuncias } = await supabase
-      .from("denuncias")
-      .select("id, estado, categoria, prioridad, creado_el, municipio, departamento, tareas_kanban(indice_columna)")
-      .eq("entidad_id", entidadId);
+    // 2. Obtener denuncias de la entidad y tareas kanban de forma paralela para evitar problemas RLS en relaciones inversas
+    const [resDenuncias, resKanban] = await Promise.all([
+      supabase
+        .from("denuncias")
+        .select("id, estado, categoria, prioridad, creado_el, municipio, departamento")
+        .eq("entidad_id", entidadId),
+      supabase
+        .from("tareas_kanban")
+        .select("id_denuncia, indice_columna")
+    ]);
+
+    const todasDenuncias = resDenuncias.data || [];
+    const todosKanban = resKanban.data || [];
+
+    const kanbanMap = {};
+    todosKanban.forEach(tk => {
+      if (tk.id_denuncia) {
+        kanbanMap[tk.id_denuncia] = tk.indice_columna;
+      }
+    });
+
+    const denunciasConKanban = todasDenuncias.map(d => ({
+      ...d,
+      indice_columna: kanbanMap[d.id] !== undefined ? kanbanMap[d.id] : null
+    }));
 
     // Filtrar reportes para que correspondan únicamente a las problemáticas designadas a la entidad
-    const denuncias = (todasDenuncias || []).filter(r => {
+    const denuncias = denunciasConKanban.filter(r => {
       if (!r.categoria) return false;
       if (categoriasValidas.length === 0) return true;
       return categoriasValidas.some(catValida => perteneceAProblematica(r.categoria, catValida));
@@ -383,11 +403,10 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     denuncias.forEach(d => {
       // Determinar estado real basado en el Kanban
       let estadoReal = d.estado;
-      const tk = d.tareas_kanban && d.tareas_kanban[0];
-      if (tk) {
-        if (tk.indice_columna === 0) estadoReal = "pendiente";
-        else if (tk.indice_columna === 1) estadoReal = "en_reparacion";
-        else if (tk.indice_columna === 2) estadoReal = "completado";
+      if (d.indice_columna !== null && d.indice_columna !== undefined) {
+        if (d.indice_columna === 0) estadoReal = "pendiente";
+        else if (d.indice_columna === 1) estadoReal = "en_reparacion";
+        else if (d.indice_columna === 2) estadoReal = "completado";
       }
 
       if (statsDenuncias[estadoReal] !== undefined) statsDenuncias[estadoReal]++;
