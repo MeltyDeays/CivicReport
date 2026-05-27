@@ -419,7 +419,7 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
           
           Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, nivel de impacto, geográficas, mapa, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
           {
-            "respuesta": "Texto explicativo analítico breve que describe la gráfica y los datos de la entidad.",
+            "respuesta": "Texto analítico estructurado que describe los datos y los KPI de la entidad.",
             "grafico": {
               "tipo": "barras" | "columnas" | "dispersion" | "mapa" | "pastel" | "lineas",
               "datos": [
@@ -431,6 +431,15 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
             }
           }
           
+          Instrucciones de formato e inspiración de observabilidad (Grafana & Firecrawl Dashboard Reporting) para la propiedad 'respuesta':
+          - Comienza con una fila de STAT CARDS (Métricas de un solo valor) usando emojis y corchetes, por ejemplo:
+            "📊 [Total: 25] | ⚙️ [En Curso: 10] | ✅ [Completados: 15]" o "👥 [Cuadrillas: 4] | ⚡ [Resolución: 82%]"
+          - Estructura el análisis aplicando el método RED/USE:
+            1. Rate (Tasa de reportes entrantes o volumen total).
+            2. Saturation/Errors (Capacidad de resolución de las cuadrillas y porcentaje de tareas completadas).
+            3. Duration (Distribución temporal o prioridades que requieren atención inmediata).
+          - Termina con una sección de advertencias o sugerencias de optimización breves (ej: 'Alerta: La cuadrilla X tiene sobrecarga de trabajo').
+
           Instrucciones de mapeo de datos reales para gráficos:
           1. Denuncias por Estado: Mapea "denunciasPorEstado" (ej: etiqueta: "Pendiente", valor: contador).
           2. Denuncias por Categoría: Mapea "denunciasPorCategoria" (ej: etiqueta: nombre de la categoría, valor: contador).

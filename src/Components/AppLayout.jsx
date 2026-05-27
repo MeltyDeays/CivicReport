@@ -322,6 +322,61 @@ function RenderizadorGraficos({ grafico }) {
   );
 }
 
+function RenderizadorStatCards({ texto }) {
+  if (typeof texto !== 'string') return null;
+
+  // Busca patrones como "📊 [Total: 25]" o "👥 [Cuadrillas: 4]"
+  const matches = [...texto.matchAll(/([\uD800-\uDBFF][\uDC00-\uDFFF]|\S|\w+)\s*\[([^\]:]+):\s*([^\]]+)\]/g)];
+  if (matches.length === 0) return null;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '12px', marginTop: '4px' }}>
+      {matches.map((match, i) => {
+        const emoji = match[1];
+        const label = match[2].trim();
+        const value = match[3].trim();
+        const gradients = [
+          'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+          'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+          'linear-gradient(135deg, #022c22 0%, #064e3b 100%)',
+          'linear-gradient(135deg, #311042 0%, #1e293b 100%)'
+        ];
+        const background = gradients[i % gradients.length];
+
+        return (
+          <div key={i} style={{
+            background,
+            border: '1px solid #1e293b',
+            borderRadius: '10px',
+            padding: '8px',
+            textAlign: 'center',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.2s ease-out'
+          }}>
+            <span style={{ fontSize: '14px', marginBottom: '2px' }}>{emoji}</span>
+            <span style={{ fontSize: '8px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.3px', display: 'block', maxWidth: '85px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={label}>
+              {label}
+            </span>
+            <span style={{ fontSize: '14px', color: '#38bdf8', fontWeight: '900', marginTop: '2px' }}>
+              {value}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function limpiarTextoDeCards(texto) {
+  if (typeof texto !== 'string') return '';
+  // Remueve las tarjetas individuales tipo "emoji [label: value]" y sus separadores
+  return texto.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF]|\S|\w+)\s*\[[^\]]+:\s*[^\]]+\]\s*(\|)?/g, '').trim();
+}
+
 export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrarSesion, sesion, perfil }) {
   const [cerrando, setCerrando] = useState(false);
   const [esEncargado, setEsEncargado] = useState(false);
@@ -686,131 +741,14 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
                           boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                           border: esBot ? '1px solid #e2e8f0' : 'none'
                         }}>
-                          {msg.texto}
+                          {esBot && <RenderizadorStatCards texto={msg.texto} />}
+                           <div style={{ whiteSpace: 'pre-line' }}>
+                             {esBot ? limpiarTextoDeCards(msg.texto) : msg.texto}
+                           </div>
 
-                          {/* Renderizado Dinámico de Gráficos Solicitados */}
-                          {esBot && msg.grafico && msg.grafico.datos && (
-                            <div style={{
-                              marginTop: '12px', background: '#0f172a', padding: '14px',
-                              borderRadius: '12px', border: '1px solid #1e293b', color: '#fff'
-                            }}>
-                              <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: '800', letterSpacing: '0.5px', marginBottom: '10px', textTransform: 'uppercase' }}>
-                                📊 Gráfico Generado ({msg.grafico.tipo || 'barras'})
-                              </div>
-
-                              {/* Caso 1: Gráfico de Dispersión (dispersion) */}
-                              {msg.grafico.tipo === 'dispersion' ? (() => {
-                                const datos = msg.grafico.datos;
-                                const xValores = datos.map(d => Number(d.x) || 0);
-                                const yValores = datos.map(d => Number(d.y) || 0);
-                                const maxX = Math.max(...xValores, 10);
-                                const maxY = Math.max(...yValores, 10);
-
-                                return (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <div style={{ position: 'relative', height: '140px', background: '#090d16', borderRadius: '8px', padding: '10px', border: '1px solid #1e293b' }}>
-                                      {/* SVG Plano Cartesiano */}
-                                      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
-                                        {/* Ejes */}
-                                        <line x1="0" y1="95" x2="100" y2="95" stroke="#334155" strokeWidth="1" />
-                                        <line x1="5" y1="0" x2="5" y2="100" stroke="#334155" strokeWidth="1" />
-                                        
-                                        {/* Puntos de dispersión */}
-                                        {datos.map((d, i) => {
-                                          const xPct = Math.min(Math.max(((Number(d.x) || 0) / maxX) * 85 + 10, 10), 95);
-                                          const yPct = Math.min(Math.max(90 - (((Number(d.y) || 0) / maxY) * 80), 5), 90);
-                                          const colorHue = 120 + i * 50;
-
-                                          return (
-                                            <g key={i}>
-                                              <circle
-                                                cx={xPct}
-                                                cy={yPct}
-                                                r="5"
-                                                fill={`hsl(${colorHue}, 80%, 55%)`}
-                                                stroke="#fff"
-                                                strokeWidth="1"
-                                                style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
-                                              >
-                                                <title>{`${d.etiqueta}: X=${d.x}, Y=${d.y}`}</title>
-                                              </circle>
-                                            </g>
-                                          );
-                                        })}
-                                      </svg>
-                                    </div>
-
-                                    {/* Leyenda simple flotante */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '60px', overflowY: 'auto', fontSize: '9px', color: '#cbd5e1', background: '#090d16', padding: '6px', borderRadius: '6px' }}>
-                                      {datos.map((d, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                          <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: `hsl(${120 + i * 50}, 80%, 55%)` }} />
-                                          <span style={{ fontWeight: '700', textTransform: 'capitalize' }}>{d.etiqueta}:</span>
-                                          <span>{`X=${d.x}, Y=${d.y}`}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              })() : null}
-
-                              {/* Caso 2: Gráfico de Columnas Verticales (columnas) */}
-                              {msg.grafico.tipo === 'columnas' ? (() => {
-                                const datos = msg.grafico.datos;
-                                const valores = datos.map(item => item.valor);
-                                const maxVal = Math.max(...valores, 1);
-
-                                return (
-                                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '140px', background: '#090d16', borderRadius: '8px', padding: '15px 10px 5px', border: '1px solid #1e293b' }}>
-                                    {datos.map((d, i) => {
-                                      const pct = Math.round((d.valor / maxVal) * 100);
-                                      const colorHue = 120 + i * 40;
-                                      return (
-                                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                                          <span style={{ fontSize: '9px', color: '#cbd5e1', fontWeight: '700', marginBottom: '4px' }}>{d.valor}</span>
-                                          <div style={{
-                                            width: '18px', height: `${Math.max(pct, 5)}%`,
-                                            background: `linear-gradient(180deg, hsl(${colorHue}, 85%, 42%) 0%, hsl(${colorHue}, 75%, 55%) 100%)`,
-                                            borderRadius: '4px 4px 0 0', transition: 'height 0.5s ease-out',
-                                            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                                          }} />
-                                          <span style={{ fontSize: '8px', color: '#94a3b8', marginTop: '6px', fontWeight: '700', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '45px', textAlign: 'center' }} title={d.etiqueta}>
-                                            {d.etiqueta}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                );
-                              })() : null}
-
-                              {/* Caso 3: Gráfico de Barras Horizontales (barras o fallback) */}
-                              {(!msg.grafico.tipo || msg.grafico.tipo === 'barras') ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                  {msg.grafico.datos.map((d, i) => {
-                                    const valores = msg.grafico.datos.map(item => item.valor);
-                                    const maxVal = Math.max(...valores, 1);
-                                    const pct = Math.round((d.valor / maxVal) * 100);
-                                    return (
-                                      <div key={i}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginBottom: '3px', fontWeight: '600' }}>
-                                          <span style={{ textTransform: 'capitalize' }}>{d.etiqueta}</span>
-                                          <span>{d.valor}</span>
-                                        </div>
-                                        <div style={{ width: '100%', height: '8px', background: '#1e293b', borderRadius: '4px', overflow: 'hidden' }}>
-                                          <div style={{
-                                            width: `${pct}%`, height: '100%',
-                                            background: `linear-gradient(90deg, hsl(${120 + i * 40}, 75%, 50%) 0%, hsl(${120 + i * 40}, 85%, 42%) 100%)`,
-                                            borderRadius: '4px', transition: 'width 0.5s ease-out'
-                                          }} />
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
-                            </div>
-                          )}
+                           {esBot && msg.grafico && (
+                             <RenderizadorGraficos grafico={msg.grafico} />
+                           )}
                         </div>
                         <span style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px', alignSelf: esBot ? 'flex-start' : 'flex-end', fontWeight: '600' }}>
                           Hace un momento
