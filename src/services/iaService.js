@@ -311,7 +311,7 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     // 2. Obtener denuncias de la entidad
     const { data: todasDenuncias } = await supabase
       .from("denuncias")
-      .select("estado, categoria, prioridad, creado_el")
+      .select("estado, categoria, prioridad, creado_el, municipio, departamento")
       .eq("entidad_id", entidadId);
 
     // Filtrar reportes para que contengan únicamente los de la entidad
@@ -358,6 +358,8 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     const statsDenuncias = { pendiente: 0, en_reparacion: 0, completado: 0 };
     const porCategoria = {};
     const porImpacto = { critica: 0, alta: 0, media: 0, baja: 0 };
+    const porDepartamento = {};
+    const porMunicipio = {};
 
     denuncias.forEach(d => {
       if (statsDenuncias[d.estado] !== undefined) statsDenuncias[d.estado]++;
@@ -369,6 +371,15 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
         .replace("critico", "critica");
       if (porImpacto[impactoNormalizado] !== undefined) {
         porImpacto[impactoNormalizado]++;
+      }
+
+      if (d.departamento) {
+        const dep = d.departamento.trim();
+        porDepartamento[dep] = (porDepartamento[dep] || 0) + 1;
+      }
+      if (d.municipio) {
+        const mun = d.municipio.trim();
+        porMunicipio[mun] = (porMunicipio[mun] || 0) + 1;
       }
     });
 
@@ -390,6 +401,8 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
       denunciasPorEstado: statsDenuncias,
       denunciasPorCategoria: porCategoria,
       denunciasPorNivelImpacto: porImpacto,
+      denunciasPorDepartamento: porDepartamento,
+      denunciasPorMunicipio: porMunicipio,
       resolucionCuadrillas: statsCuadrillas
     };
 
@@ -404,14 +417,14 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
           Tu rol es conversar y responder consultas analíticas basándote únicamente en los datos reales de la entidad del administrador logueado.
           Los datos analíticos reales actuales de la entidad son: ${JSON.stringify(contextoDatos)}.
           
-          Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, nivel de impacto, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
+          Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, nivel de impacto, geográficas, mapa, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
           {
             "respuesta": "Texto explicativo analítico breve que describe la gráfica y los datos de la entidad.",
             "grafico": {
-              "tipo": "barras" | "columnas" | "dispersion",
+              "tipo": "barras" | "columnas" | "dispersion" | "mapa" | "pastel" | "lineas",
               "datos": [
-                // Para tipo "barras" (horizontal) o "columnas" (vertical):
-                { "etiqueta": "Etiqueta del Item", "valor": 12 }
+                // Para tipo "barras", "columnas", "mapa", "pastel" o "lineas":
+                { "etiqueta": "Etiqueta del Item (ej: Municipio, Categoría o Estado)", "valor": 12 }
                 // Para tipo "dispersion" (gráfico de dispersión X-Y):
                 { "etiqueta": "Punto A", "x": 10, "y": 25 }
               ]
@@ -424,6 +437,8 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
           3. Denuncias por Nivel de Impacto: Mapea "denunciasPorNivelImpacto" (ej: etiqueta: "Critica" | "Alta" | "Media" | "Baja", valor: contador).
           4. Resolución de Cuadrillas: Mapea "resolucionCuadrillas" (ej: etiqueta: nombre de la cuadrilla, valor: resolucionPct).
           5. Gráfico de Dispersión: Asigna valores coherentes para X e Y (ej: X=cantidad de reportes completados, Y=resolucionPct o nivel de prioridad mapeado a numero: Critica=80, Alta=60, Media=40, Baja=20).
+          6. Mapa Geográfico (tipo "mapa"): Mapea "denunciasPorDepartamento" o "denunciasPorMunicipio" (ej: etiqueta: nombre del departamento o municipio, valor: contador).
+          7. Gráfico de Pastel (tipo "pastel") y Gráfico de Líneas (tipo "lineas"): Mapea cualquier agregación pertinente según el requerimiento de análisis visual del usuario.
 
           Si no hay datos registrados (valores en 0), genera de todos modos el gráfico con valores en 0 e indícale amigablemente en "respuesta" cómo puede registrar denuncias o asignar cuadrillas para empezar.
           Si el usuario NO te pide visualizar, graficar ni ver datos, responde en texto plano de manera directa sin formato JSON.`,
