@@ -1,20 +1,6 @@
 // Archivo: src/services/iaService.js
-import { createOpenAI } from "@ai-sdk/openai";
-import { generateText, tool } from "ai";
-import { z } from "zod";
 import { supabase } from "../core/supabaseClient";
-
-// Verificar si existe la llave API de Groq para usar IA real, de lo contrario activamos el fallback local simulado
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-
-let MODELO_IA = null;
-if (GROQ_API_KEY) {
-  const groq = createOpenAI({
-    baseURL: "https://api.groq.com/openai/v1",
-    apiKey: GROQ_API_KEY,
-  });
-  MODELO_IA = groq("llama-3.3-70b-versatile");
-}
+import * as iaClient from "./iaClient";
 
 const MAPA_SINONIMOS = {
   "fallo de luz": ["fallo de luz", "alumbrado", "electricidad", "luz"],
@@ -55,28 +41,16 @@ export async function validarReporteAntiSpam(nuevoReporte) {
 
   const reportesCercanos = cercanos || [];
 
-  if (MODELO_IA) {
+  if (iaClient.tieneIA()) {
     try {
-      const response = await generateText({
-        model: MODELO_IA,
-        system: `Eres el agente de control de calidad y prevención de duplicados de CivicReport. 
-        Tu objetivo es evaluar si el reporte que introduce el ciudadano ya ha sido registrado previamente basándote en la similitud semántica de su descripción y su cercanía geográfica.
-        Sé conciso y directo. Si es duplicado, genera un mensaje informando educadamente al ciudadano de que su reporte ya está registrado y en revisión.`,
-        prompt: `Nuevo reporte a evaluar:
-        Título: "${nuevoReporte.titulo}"
-        Descripción: "${nuevoReporte.descripcion}"
-        
-        Reportes activos cercanos ya existentes en el área (radio 150m):
-        ${JSON.stringify(reportesCercanos)}`,
-      });
-
-      const esDuplicado = response.text.toLowerCase().includes("duplicado") || response.text.toLowerCase().includes("ya registrado");
+      const text = await iaClient.llamarModeracionAntiSpam(nuevoReporte, reportesCercanos);
+      const esDuplicado = text.toLowerCase().includes("duplicado") || text.toLowerCase().includes("ya registrado");
       return {
-        textoRespuesta: response.text,
+        textoRespuesta: text,
         esDuplicado
       };
     } catch (e) {
-      console.warn("Excepción al consultar modelo IA (Groq). Iniciando fallback heurístico local...", e.message);
+      console.warn("Excepción al consultar modelo IA en iaClient. Iniciando fallback heurístico local...", e.message);
     }
   }
 
@@ -119,39 +93,16 @@ export async function procesarInventarioDesdeTexto(textoResolucion, entidadId) {
 
   const descuentosParaAplicar = [];
 
-  if (MODELO_IA) {
+  if (iaClient.tieneIA()) {
     try {
-      const response = await generateText({
-        model: MODELO_IA,
-        system: `Eres el agente de logística y almacén de CivicReport.
-        Tu labor es deducir qué materiales del catálogo se usaron y en qué cantidades basándote en el comentario de resolución de la obra.
-        Genera el listado de materiales y llama a la herramienta para descontarlos.`,
-        prompt: `Catálogo de materiales disponibles:
-        ${JSON.stringify(catalogo)}
-        
-        Texto de resolución de la cuadrilla: "${textoResolucion}"`,
-        tools: {
-          descontar_material: tool({
-            description: "Descuenta la cantidad de un material específico del inventario de la entidad.",
-            parameters: z.object({
-              materialId: z.string().uuid(),
-              cantidad: z.number().positive()
-            }),
-            execute: async ({ materialId, cantidad }) => {
-              descuentosParaAplicar.push({ materialId, cantidad });
-              return { success: true };
-            }
-          })
-        },
-        maxSteps: 3
-      });
-
+      const { textoRespuesta, descuentosParaAplicar: deducidos } = await iaClient.llamarDeduccionInventario(textoResolucion, catalogo);
+      
       // Aplicar los descuentos deducidos por la IA en la BD
-      for (const item of descuentosParaAplicar) {
+      for (const item of deducidos) {
         await aplicarDescuentoInventario(entidadId, item.materialId, item.cantidad);
       }
 
-      return { resumenEjecucion: response.text };
+      return { resumenEjecucion: textoRespuesta };
     } catch (e) {
       console.warn("Excepción en procesamiento de inventario IA. Usando fallback Regex local...", e.message);
     }
@@ -262,22 +213,11 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
     const categoriasStr = Object.entries(porCategoria).map(([k, v]) => `${k}: ${v}`).join(", ");
     let reporteEscrito = "";
 
-    if (MODELO_IA) {
+    if (iaClient.tieneIA()) {
       try {
-        const response = await generateText({
-          model: MODELO_IA,
-          system: `Eres un analista de planeación urbana experto de CivicReport para la entidad "${nombreEntidad}". 
-          Tu labor es redactar un reporte ejecutivo analítico gubernamental basándote exclusivamente en las estadísticas provistas. 
-          Sé formal, constructivo, conciso pero descriptivo (máximo 4-5 párrafos, entre 200 y 250 palabras en total, balanceando el resumen y recomendaciones ejecutivas sin extenderte de forma innecesaria). 
-          Está estrictamente prohibido mencionar o sugerir acciones sobre otras competencias ajenas a "${nombreEntidad}".`,
-          prompt: `Estadísticas de denuncias de los últimos días para la entidad "${nombreEntidad}":
-          Total reportes: ${totalSemanales}
-          Desglose por categorías: ${categoriasStr}`,
-        });
-
-        reporteEscrito = response.text;
+        reporteEscrito = await iaClient.llamarReporteEjecutivo(nombreEntidad, totalSemanales, categoriasStr);
       } catch (e) {
-        console.warn("Excepción al generar reporte semanal con IA. Usando plantilla local...", e.message);
+        console.warn("Excepción al generar reporte semanal con IA en iaClient. Usando plantilla local...", e.message);
       }
     }
 
@@ -456,52 +396,10 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
     let respuestaTexto = "";
     let graficoDetectado = null;
 
-    if (MODELO_IA) {
+    if (iaClient.tieneIA()) {
       try {
-        const response = await generateText({
-          model: MODELO_IA,
-          system: `Eres el Bot de IA oficial de CivicReport ("CivicReport's Bot").
-          Tu rol es conversar y responder consultas analíticas basándote únicamente en los datos reales de la entidad del administrador logueado.
-          Los datos analíticos reales actuales de la entidad son: ${JSON.stringify(contextoDatos)}.
-          
-          Si el usuario te pide visualizar, graficar, ver, mostrar o comparar estadísticas (de denuncias, cuadrillas, categorías, nivel de impacto, geográficas, mapa, etc.), DEBES obligatoriamente estructurar tu respuesta como un objeto JSON con el siguiente formato:
-          {
-            "respuesta": "Texto analítico estructurado que describe los datos y los KPI de la entidad.",
-            "grafico": {
-              "tipo": "barras" | "columnas" | "dispersion" | "mapa" | "pastel" | "lineas",
-              "datos": [
-                // Para tipo "barras", "columnas", "mapa", "pastel" o "lineas":
-                { "etiqueta": "Etiqueta del Item (ej: Municipio, Categoría o Estado)", "valor": 12 }
-                // Para tipo "dispersion" (gráfico de dispersión X-Y):
-                { "etiqueta": "Punto A", "x": 10, "y": 25 }
-              ]
-            }
-          }
-          
-          Instrucciones de formato e inspiración de observabilidad (Grafana & Firecrawl Dashboard Reporting) para la propiedad 'respuesta':
-          - Comienza con una fila de STAT CARDS (Métricas de un solo valor) usando emojis y corchetes, por ejemplo:
-            "📊 [Total: 25] | ⚙️ [En Curso: 10] | ✅ [Completados: 15]" o "👥 [Cuadrillas: 4] | ⚡ [Resolución: 82%]"
-          - Estructura el análisis aplicando el método RED/USE:
-            1. Rate (Tasa de reportes entrantes o volumen total).
-            2. Saturation/Errors (Capacidad de resolución de las cuadrillas y porcentaje de tareas completadas).
-            3. Duration (Distribución temporal o prioridades que requieren atención inmediata).
-          - Termina con una sección de advertencias o sugerencias de optimización breves (ej: 'Alerta: La cuadrilla X tiene sobrecarga de trabajo').
-
-          Instrucciones de mapeo de datos reales para gráficos:
-          1. Denuncias por Estado: Mapea "denunciasPorEstado" (ej: etiqueta: "Pendiente", valor: contador).
-          2. Denuncias por Categoría: Mapea "denunciasPorCategoria" (ej: etiqueta: nombre de la categoría, valor: contador).
-          3. Denuncias por Nivel de Impacto: Mapea "denunciasPorNivelImpacto" (ej: etiqueta: "Critica" | "Alta" | "Media" | "Baja", valor: contador).
-          4. Resolución de Cuadrillas: Mapea "resolucionCuadrillas" (ej: etiqueta: nombre de la cuadrilla, valor: resolucionPct).
-          5. Gráfico de Dispersión: Asigna valores coherentes para X e Y (ej: X=cantidad de reportes completados, Y=resolucionPct o nivel de prioridad mapeado a numero: Critica=80, Alta=60, Media=40, Baja=20).
-          6. Mapa Geográfico (tipo "mapa"): Mapea "denunciasPorDepartamento" o "denunciasPorMunicipio" (ej: etiqueta: nombre del departamento o municipio, valor: contador).
-          7. Gráfico de Pastel (tipo "pastel") y Gráfico de Líneas (tipo "lineas"): Mapea cualquier agregación pertinente según el requerimiento de análisis visual del usuario.
-
-          Si no hay datos registrados (valores en 0), genera de todos modos el gráfico con valores en 0 e indícale amigablemente en "respuesta" cómo puede registrar denuncias o asignar cuadrillas para empezar.
-          Si el usuario NO te pide visualizar, graficar ni ver datos, responde en texto plano de manera directa sin formato JSON.`,
-          prompt: mensaje
-        });
-
-        const respuestaLimpia = response.text.trim();
+        const text = await iaClient.llamarChatbotAnalitico(mensaje, contextoDatos);
+        const respuestaLimpia = text.trim();
         const indexInicio = respuestaLimpia.indexOf("{");
         const indexFin = respuestaLimpia.lastIndexOf("}");
 
@@ -519,7 +417,7 @@ export async function procesarConsultaChatbot(mensaje, entidadId) {
           respuestaTexto = respuestaLimpia;
         }
       } catch (e) {
-        console.error("Error al procesar mensaje con Groq:", e);
+        console.error("Error al procesar mensaje con Groq en iaClient:", e);
       }
     }
 
