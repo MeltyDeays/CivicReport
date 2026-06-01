@@ -38,4 +38,33 @@ export const adminEntidadReportesModel = {
 
     return { data: normalizedData, error };
   },
+
+  async reportarComoFalso(denunciaId, entidadId, ciudadanoId, motivo, pruebas) {
+    const { error: errorStrike } = await supabase
+      .from("strikes_ciudadano")
+      .insert([{
+        id_ciudadano: ciudadanoId,
+        id_denuncia: denunciaId,
+        id_entidad_reportante: entidadId,
+        motivo: motivo,
+        pruebas_entidad: pruebas || null,
+        estado: 'pendiente'
+      }]);
+
+    if (errorStrike) throw errorStrike;
+
+    const { error: errorDenuncia } = await supabase
+      .from("denuncias")
+      .update({
+        estado: 'rechazado',
+        es_falso_reporte: true,
+        es_visible: false,
+        motivo_falso: motivo
+      })
+      .eq("id", denunciaId);
+
+    if (errorDenuncia) throw errorDenuncia;
+
+    return { success: true };
+  }
 };

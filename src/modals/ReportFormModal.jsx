@@ -128,6 +128,10 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
+    if (!formulario.url_imagen) {
+      setError("La evidencia fotográfica es obligatoria para reportar una incidencia y evitar reportes falsos.");
+      return;
+    }
     if (!mapPosition) {
       setError("Por favor, marca la ubicación en el mapa.");
       return;
@@ -168,7 +172,7 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
           
           {/* Subida de Imagen */}
           <div className="input-group">
-            <span className="label-premium" style={{ display: 'block', marginBottom: '12px', fontWeight: '800', color: '#1e293b', fontSize: '0.9rem', textTransform: 'uppercase' }}>Evidencia Fotográfica</span>
+            <span className="label-premium" style={{ display: 'block', marginBottom: '12px', fontWeight: '800', color: '#1e293b', fontSize: '0.9rem', textTransform: 'uppercase' }}>Evidencia Fotográfica *</span>
             <div 
               onClick={() => fileInputRef.current.click()}
               style={{ 

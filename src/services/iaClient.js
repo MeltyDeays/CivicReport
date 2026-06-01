@@ -140,3 +140,57 @@ export async function llamarChatbotAnalitico(mensaje, contextoDatos) {
   });
   return response.text;
 }
+
+/**
+ * Llama al LLM de Visión de Groq para validar la selfie y la cédula.
+ */
+export async function llamarValidacionIdentidad({ selfieBase64, cedulaFrenteBase64, cedulaAtrasBase64, cedulaEscrita }) {
+  if (!GROQ_API_KEY) {
+    // Fallback simulado si no hay API key
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    return {
+      valido: true,
+      motivo: "Validación de identidad completada (Modo de demostración sin API key de Groq)."
+    };
+  }
+
+  const groq = createOpenAI({
+    baseURL: "https://api.groq.com/openai/v1",
+    apiKey: GROQ_API_KEY,
+  });
+  const modeloVision = groq("llama-3.2-11b-vision-preview");
+
+  try {
+    const response = await generateText({
+      model: modeloVision,
+      system: `Eres el agente de verificación de identidad biométrica de CivicReport.
+      Tu tarea es verificar si:
+      1. La persona de la foto de perfil (selfie) coincide visualmente con la persona de la foto de la cédula de identidad de frente.
+      2. El número de cédula escrito coincide con el número de cédula visible en la foto de la cédula de frente.
+      3. Las fotos corresponden a documentos de identidad legítimos (frente y atrás).
+      
+      Debes retornar un JSON estrictamente estructurado en el siguiente formato:
+      {
+        "valido": true | false,
+        "motivo": "Explicación detallada del por qué de la aprobación o rechazo (ej. 'La selfie no coincide con el rostro de la cédula' o 'El número de cédula ingresado no coincide con el de la imagen')."
+      }`,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Verifica si el usuario es válido. El número de cédula escrito es: ${cedulaEscrita}` },
+            { type: "image", image: selfieBase64, mimeType: "image/jpeg" },
+            { type: "image", image: cedulaFrenteBase64, mimeType: "image/jpeg" },
+            { type: "image", image: cedulaAtrasBase64, mimeType: "image/jpeg" }
+          ]
+        }
+      ]
+    });
+
+    const cleanText = response.text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanText);
+  } catch (error) {
+    console.error("Error en validación biométrica con Groq:", error);
+    throw new Error("Fallo en la validación por IA: " + error.message);
+  }
+}

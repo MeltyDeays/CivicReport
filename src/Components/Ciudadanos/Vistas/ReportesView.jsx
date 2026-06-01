@@ -14,6 +14,7 @@ export default function CiudadanoReportesView() {
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroDep, setFiltroDep] = useState("todos");
   const [filtroUrgencia, setFiltroUrgencia] = useState("todos");
+  const [tabFeed, setTabFeed] = useState("comunidad"); // "comunidad" o "mis_reportes"
   
   const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
   const [modalFormularioAbierto, setModalFormularioAbierto] = useState(false);
@@ -26,14 +27,21 @@ export default function CiudadanoReportesView() {
     const OCHO_HORAS_MS = 8 * 60 * 60 * 1000;
 
     return reportes.filter((item) => {
-      // 1. Visibilidad manual (H017)
       const esDuenio = item.id_ciudadano === sesion?.user?.id;
-      if (!esDuenio && item.es_visible === false) return false;
 
-      // 2. Auto-ocultado automático (Completados > 8h)
-      if (item.estado === 'completado' && item.actualizado_el) {
-        const tiempoTranscurrido = ahora - new Date(item.actualizado_el).getTime();
-        if (tiempoTranscurrido > OCHO_HORAS_MS) return false;
+      if (tabFeed === "mis_reportes") {
+        // En mis reportes solo veo mis propios reportes sin importar visibilidad
+        if (!esDuenio) return false;
+      } else {
+        // En comunidad
+        // 1. Visibilidad manual (H017)
+        if (!esDuenio && item.es_visible === false) return false;
+
+        // 2. Auto-ocultado automático (Completados > 8h)
+        if (item.estado === 'completado' && item.actualizado_el) {
+          const tiempoTranscurrido = ahora - new Date(item.actualizado_el).getTime();
+          if (tiempoTranscurrido > OCHO_HORAS_MS) return false;
+        }
       }
 
       const coincideBusqueda = item.titulo.toLowerCase().includes(busqueda.toLowerCase());
@@ -42,7 +50,7 @@ export default function CiudadanoReportesView() {
       const coincideUrgencia = filtroUrgencia === "todos" || item.urgencia === filtroUrgencia;
       return coincideBusqueda && coincideEstado && coincideDep && coincideUrgencia;
     });
-  }, [reportes, busqueda, filtroEstado, filtroDep, filtroUrgencia, sesion?.user?.id]);
+  }, [reportes, tabFeed, busqueda, filtroEstado, filtroDep, filtroUrgencia, sesion?.user?.id]);
 
   const estadisticas = useMemo(() => {
     const total = reportes.length;
@@ -177,6 +185,38 @@ export default function CiudadanoReportesView() {
           <div style={{ color: '#15803d', fontSize: '2rem', fontWeight: '800' }}>{estadisticas.completados}</div>
           <div style={{ color: '#4ade80', fontWeight: '600', fontSize: '0.9rem', marginTop: '4px' }}>Completados</div>
         </div>
+      </div>
+
+      {/* Selector de Feed */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+        <button
+          onClick={() => setTabFeed("comunidad")}
+          style={{
+            padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '700',
+            cursor: 'pointer', transition: 'all 0.2s',
+            background: tabFeed === "comunidad" ? '#1f64ff' : '#fff',
+            color: tabFeed === "comunidad" ? '#fff' : '#64748b',
+            border: '1px solid',
+            borderColor: tabFeed === "comunidad" ? '#1f64ff' : '#eef2f6',
+            boxShadow: tabFeed === "comunidad" ? '0 4px 12px rgba(31,100,255,0.15)' : 'none'
+          }}
+        >
+          🌐 Reportes de la Comunidad
+        </button>
+        <button
+          onClick={() => setTabFeed("mis_reportes")}
+          style={{
+            padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '700',
+            cursor: 'pointer', transition: 'all 0.2s',
+            background: tabFeed === "mis_reportes" ? '#1f64ff' : '#fff',
+            color: tabFeed === "mis_reportes" ? '#fff' : '#64748b',
+            border: '1px solid',
+            borderColor: tabFeed === "mis_reportes" ? '#1f64ff' : '#eef2f6',
+            boxShadow: tabFeed === "mis_reportes" ? '0 4px 12px rgba(31,100,255,0.15)' : 'none'
+          }}
+        >
+          📂 Mis Reportes (Historial)
+        </button>
       </div>
 
       {/* Toolbar con Filtros Avanzados */}

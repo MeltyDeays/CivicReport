@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
 import { useReportesAdminEntidad } from "../Controladores/useReportesAdminEntidad";
 import RepairOrderModal from "../../../modals/RepairOrderModal";
+import FalseReportModal from "../../../modals/FalseReportModal";
 import { agregarAlTablero, obtenerIdsEnTablero } from "../../../services/kanbanService";
 import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 import { formatearFecha } from "../../../utils/formatters";
@@ -28,13 +29,14 @@ const CATEGORIA_ICONOS = {
 
 export default function AdminEntidadReportesView() {
   const { perfil } = useAuth();
-  const { items, setItems, cargar } = useReportesAdminEntidad();
+  const { items, setItems, reportando, reportarFalso, cargar } = useReportesAdminEntidad();
   const [busqueda, setBusqueda] = useState("");
   const [filtroDep, setFiltroDep] = useState("todos");
   const [filtroUrgencia, setFiltroUrgencia] = useState("todas");
   const [tabActivo, setTabActivo] = useState("infraestructura"); // infraestructura | sugerencias
   const [expandido, setExpandido] = useState(null);
   const [denunciaOrden, setDenunciaOrden] = useState(null);
+  const [denunciaFalsa, setDenunciaFalsa] = useState(null);
   const [enTablero, setEnTablero] = useState({});
   const [agregando, setAgregando] = useState("");
 
@@ -320,6 +322,16 @@ export default function AdminEntidadReportesView() {
                     {/* Action buttons */}
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                       <button
+                        onClick={() => setDenunciaFalsa(item)}
+                        style={{
+                          padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
+                          fontWeight: '700', cursor: 'pointer', border: '1px solid #fee2e2',
+                          background: '#fef2f2', color: '#ef4444', transition: 'all 0.2s'
+                        }}
+                      >
+                        ⚠️ Reportar Falso
+                      </button>
+                      <button
                         onClick={() => manejarAlternarVisibilidad(item)}
                         style={{
                           padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
@@ -372,6 +384,17 @@ export default function AdminEntidadReportesView() {
         denuncia={denunciaOrden}
         alCerrar={() => setDenunciaOrden(null)}
         alConfirmar={cargar}
+      />
+      <FalseReportModal
+        abierto={Boolean(denunciaFalsa)}
+        cargando={reportando}
+        alCerrar={() => setDenunciaFalsa(null)}
+        alConfirmar={async ({ motivo, pruebas }) => {
+          const res = await reportarFalso(denunciaFalsa.id, denunciaFalsa.id_ciudadano, motivo, pruebas);
+          if (res && res.success) {
+            setDenunciaFalsa(null);
+          }
+        }}
       />
     </section>
   );
