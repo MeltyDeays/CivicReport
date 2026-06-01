@@ -17,7 +17,7 @@ export async function getSession() {
  * H001 — Registro Ciudadano
  * Crea usuario en auth.users + perfil en tabla perfiles con rol "ciudadano".
  */
-export async function registroCiudadano({ email, password, cedula, nombreCompleto }) {
+export async function registroCiudadano({ email, password, cedula, nombreCompleto, foto_selfie_url, foto_cedula_frente_url, foto_cedula_atras_url, verificado_ia, motivo_rechazo_ia }) {
   // 1. Crear usuario en Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -36,6 +36,11 @@ export async function registroCiudadano({ email, password, cedula, nombreComplet
     nombre_completo: nombreCompleto,
     rol: "ciudadano",
     id_entidad: null,
+    foto_selfie_url,
+    foto_cedula_frente_url,
+    foto_cedula_atras_url,
+    verificado_ia,
+    motivo_rechazo_ia
   }]);
   if (perfilError) throw new Error(`Usuario creado pero falló el perfil: ${perfilError.message}`);
   return authData;
@@ -88,7 +93,7 @@ export async function registroInstitucional({ email, password, nombreCompleto, c
  * H026 / V7 — Registro Técnico
  * Valida código de invitación (no lo marca como usado) → Crea usuario → Crea perfil con rol "tecnico" y "especialidad".
  */
-export async function registroTecnico({ email, password, nombreCompleto, cedula, codigoInvitacion }) {
+export async function registroTecnico({ email, password, nombreCompleto, cedula, codigoInvitacion, foto_selfie_url, foto_cedula_frente_url, foto_cedula_atras_url, verificado_ia, motivo_rechazo_ia }) {
   // 1. Validar que la invitación exista, no esté usada
   const { data: invitacion, error: invError } = await supabase
     .from("invitaciones_empleados")
@@ -116,6 +121,11 @@ export async function registroTecnico({ email, password, nombreCompleto, cedula,
     rol: "tecnico",
     id_entidad: invitacion.entidad_id,
     especialidad: invitacion.especialidad,
+    foto_selfie_url,
+    foto_cedula_frente_url,
+    foto_cedula_atras_url,
+    verificado_ia,
+    motivo_rechazo_ia
   }]);
   if (perfilError) throw new Error(`Usuario creado pero falló el perfil: ${perfilError.message}`);
   // 4. Marcar la invitación como usada

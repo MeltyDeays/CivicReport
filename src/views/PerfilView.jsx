@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../modules/auth/controllers/useAuth";
+import { useDenunciasCiudadano } from "../Components/Ciudadanos/Controladores/useDenunciasCiudadano";
+import ModalDetalleReporte from "../modals/ReportDetailModal";
 
 function formatearCedula(ced) {
   if (!ced) return "—";
@@ -22,6 +24,8 @@ const ETIQUETAS_ROL = {
 
 export default function VistaPerfil() {
   const { perfil, sesion, actualizarPerfil, solicitarBaja, logout } = useAuth();
+  const { reportes, actualizarFirmaLocal } = useDenunciasCiudadano();
+  const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
   const [editando, setEditando] = useState(false);
   const [nombreTemp, setNombreTemp] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -182,6 +186,45 @@ export default function VistaPerfil() {
         </div>
       </div>
 
+      {/* Indicador de Strikes para Ciudadanos */}
+      {perfil?.rol === 'ciudadano' && (
+        <div style={{
+          background: "#fff", borderRadius: 24, padding: "24px 32px", marginBottom: 24,
+          border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.04)",
+          display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 8 }}>
+              ⚠️ Historial de Conducta
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
+              Mantén un buen uso del servicio. Al llegar a 3 strikes tu cuenta será suspendida.
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: perfil.strikes_totales > 0 ? "#ef4444" : "#64748b" }}>
+              Strikes actuales: {perfil.strikes_totales || 0} / 3
+            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[1, 2, 3].map(stNum => {
+                const activo = (perfil.strikes_totales || 0) >= stNum;
+                return (
+                  <div
+                    key={stNum}
+                    style={{
+                      width: 14, height: 14, borderRadius: "50%",
+                      background: activo ? "#ef4444" : "#e2e8f0",
+                      boxShadow: activo ? "0 0 8px rgba(239,68,68,0.5)" : "none",
+                      transition: "all 0.3s"
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{
         background: "#fff", borderRadius: 24, padding: "32px",
         border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.04)"
@@ -212,6 +255,77 @@ export default function VistaPerfil() {
           ))}
         </div>
       </div>
+
+      {/* Historial de mis Reportes */}
+      {perfil?.rol === 'ciudadano' && (() => {
+        const misReportes = reportes.filter(r => r.id_ciudadano === sesion?.user?.id);
+        return (
+          <div style={{
+            background: "#fff", borderRadius: 24, padding: "32px", marginTop: 24,
+            border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.04)"
+          }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 8 }}>
+              📂 Historial de mis Reportes ({misReportes.length})
+            </h2>
+            <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748b", lineHeight: 1.6 }}>
+              Aquí puedes ver el estado actual de todas tus denuncias, incluyendo las resueltas y en espera de atención.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {misReportes.length > 0 ? (
+                misReportes.map(rep => {
+                  const badgeColor = 
+                    rep.estado === 'completado' ? { bg: '#dcfce7', text: '#15803d', label: 'Completado' } :
+                    rep.estado === 'en_reparacion' ? { bg: '#eff6ff', text: '#1d4ed8', label: 'En Progreso' } :
+                    rep.estado === 'rechazado' ? { bg: '#fee2e2', text: '#b91c1c', label: 'Rechazado' } :
+                    { bg: '#f1f5f9', text: '#475569', label: 'Pendiente' };
+
+                  return (
+                    <div
+                      key={rep.id}
+                      onClick={() => setReporteSeleccionado(rep)}
+                      style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        background: "#f8fafc", padding: "16px 20px", borderRadius: 16,
+                        border: "1px solid #f1f5f9", cursor: "pointer", transition: "transform 0.2s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span style={{ fontSize: "1.5rem" }}>
+                          {rep.problematica?.icono || ({ Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋' }[rep.categoria] || '📋')}
+                        </span>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
+                            {rep.titulo}
+                          </h4>
+                          <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                            📍 {rep.direccion}, {rep.municipio}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span style={{
+                          padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                          background: badgeColor.bg, color: badgeColor.text, textTransform: "uppercase"
+                        }}>
+                          {badgeColor.label}
+                        </span>
+                        <span style={{ color: "#cbd5e1" }}>➔</span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: "center", padding: "2rem", background: "#f8fafc", borderRadius: 16, border: "1px dashed #cbd5e1" }}>
+                  <p style={{ margin: 0, color: "#64748b", fontWeight: 600 }}>Aún no has creado ningún reporte.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{
         background: "#fff", borderRadius: 24, padding: "32px", marginTop: 24,
@@ -290,6 +404,16 @@ export default function VistaPerfil() {
             </div>
           </div>
         </div>
+      )}
+
+      {reporteSeleccionado && (
+        <ModalDetalleReporte
+          reporte={reporteSeleccionado}
+          alCerrar={() => setReporteSeleccionado(null)}
+          alCambiarFirma={actualizarFirmaLocal}
+          usuarioId={sesion?.user?.id}
+          soloLectura={true}
+        />
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `

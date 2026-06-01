@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, createContext, useContext } from "react";
 import { supabase } from "../../../core/supabaseClient";
 import { signInWithEmail, signOut, getSession, registroCiudadano as registroCiudadanoModel, registroInstitucional as registroInstitucionalModel, registroTecnico as registroTecnicoModel, vincularCodigoTecnico as vincularCodigoTecnicoModel } from "../models/authModel";
 import { fetchProfileByUserId, updateProfile, desactivarCuenta as desactivarCuentaModel } from "../models/profileModel";
+import PantallaBloqueo from "../components/PantallaBloqueo";
 
 function mapRolToAppRole(rolBd) {
   if (rolBd === "ciudadano") return "ciudadano";
@@ -22,6 +23,47 @@ export function AuthProvider({ children }) {
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
+  const [bloqueoData, setBloqueoData] = useState(null);
+
+  const cargarBloqueoData = async (userId) => {
+    try {
+      const { data: multas } = await supabase
+        .from("multas_ciudadano")
+        .select(`
+          id,
+          nivel,
+          monto,
+          creado_el,
+          entidad:entidades_admin(nombre, direccion)
+        `)
+        .eq("id_ciudadano", userId)
+        .eq("estado", "pendiente")
+        .order("creado_el", { ascending: false })
+        .limit(1);
+
+      const { data: strikes } = await supabase
+        .from("strikes_ciudadano")
+        .select(`
+          id,
+          motivo,
+          pruebas_entidad,
+          creado_el,
+          denuncia:denuncias(titulo, descripcion),
+          entidad:entidades_admin(nombre)
+        `)
+        .eq("id_ciudadano", userId)
+        .eq("estado", "confirmado")
+        .order("creado_el", { ascending: false })
+        .limit(1);
+
+      setBloqueoData({
+        multa: multas?.[0] || null,
+        strike: strikes?.[0] || null
+      });
+    } catch (err) {
+      console.error("Error al cargar datos de bloqueo:", err);
+    }
+  };
 
   useEffect(() => {
     let activo = true;
@@ -47,7 +89,12 @@ export function AuthProvider({ children }) {
           
           if (activo) {
             setPerfil(perfilActual);
-            if (perfilActual) localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+            if (perfilActual) {
+              localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+              if (perfilActual.estado_cuenta === 'suspendido' || perfilActual.estado_cuenta === 'baneado') {
+                await cargarBloqueoData(session.user.id);
+              }
+            }
           }
         }
       } catch (err) {
@@ -91,7 +138,12 @@ export function AuthProvider({ children }) {
           const perfilActual = await fetchProfileByUserId(nuevaSesion.user.id).catch(() => null);
           if (activo) {
             setPerfil(perfilActual);
-            if (perfilActual) localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+            if (perfilActual) {
+              localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+              if (perfilActual.estado_cuenta === 'suspendido' || perfilActual.estado_cuenta === 'baneado') {
+                await cargarBloqueoData(nuevaSesion.user.id);
+              }
+            }
             setCargandoSesion(false);
           }
         } catch {
@@ -149,7 +201,12 @@ export function AuthProvider({ children }) {
             }
             
             setPerfil(perfilActual);
-            if (perfilActual) localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+            if (perfilActual) {
+              localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
+              if (perfilActual.estado_cuenta === 'suspendido' || perfilActual.estado_cuenta === 'baneado') {
+                await cargarBloqueoData(sesionNueva.user.id);
+              }
+            }
           } catch (err) {
             console.error("Error en login/perfil:", err);
             setPerfil(null);
@@ -199,9 +256,19 @@ export function AuthProvider({ children }) {
     cargandoSesion, sesion, perfil, rol, ...actions
   }), [cargandoSesion, sesion, perfil, rol, actions]);
 
+  const estaBloqueado = perfil && (perfil.estado_cuenta === 'suspendido' || perfil.estado_cuenta === 'baneado');
+
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {estaBloqueado ? (
+        <PantallaBloqueo
+          perfil={perfil}
+          bloqueoData={bloqueoData}
+          alCerrarSesion={actions.logout}
+        />
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

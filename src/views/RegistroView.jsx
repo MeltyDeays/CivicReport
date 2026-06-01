@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CanvasRevealEffect } from "../Components/ui/canvas-reveal-effect";
+import { llamarValidacionIdentidad } from "../services/iaClient";
+import { uploadFile } from "../services/storageService";
 
 export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstitucional, alRegistroTecnico, alIrLogin }) {
   const [tab, setTab] = useState("ciudadano");
@@ -16,6 +18,75 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
   const [cedula, setCedula] = useState("");
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [codigoInvitacion, setCodigoInvitacion] = useState("");
+
+  const [selfie, setSelfie] = useState(null);
+  const [selfieUrl, setSelfieUrl] = useState("");
+  const [cedulaFrente, setCedulaFrente] = useState(null);
+  const [cedulaFrenteUrl, setCedulaFrenteUrl] = useState("");
+  const [cedulaAtras, setCedulaAtras] = useState(null);
+  const [cedulaAtrasUrl, setCedulaAtrasUrl] = useState("");
+
+  const [selfieBase64, setSelfieBase64] = useState("");
+  const [cedulaFrenteBase64, setCedulaFrenteBase64] = useState("");
+  const [cedulaAtrasBase64, setCedulaAtrasBase64] = useState("");
+
+  const [validandoIdentidad, setValidandoIdentidad] = useState(false);
+  const [mensajeValidacion, setMensajeValidacion] = useState("");
+
+  const selfieInputRef = useRef(null);
+  const frenteInputRef = useRef(null);
+  const atrasInputRef = useRef(null);
+
+  const convertirABase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64Str = reader.result.split(',')[1];
+        resolve(base64Str);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const manejarSelfie = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelfie(file);
+    setSelfieUrl(URL.createObjectURL(file));
+    try {
+      const b64 = await convertirABase64(file);
+      setSelfieBase64(b64);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const manejarCedulaFrente = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setCedulaFrente(file);
+    setCedulaFrenteUrl(URL.createObjectURL(file));
+    try {
+      const b64 = await convertirABase64(file);
+      setCedulaFrenteBase64(b64);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const manejarCedulaAtras = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setCedulaAtras(file);
+    setCedulaAtrasUrl(URL.createObjectURL(file));
+    try {
+      const b64 = await convertirABase64(file);
+      setCedulaAtrasBase64(b64);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const formatearCedula = (valor) => {
     let limpio = valor.replace(/[^0-9a-zA-Z]/g, "").toUpperCase().slice(0, 14);
@@ -35,19 +106,85 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
     setExito("");
 
     if (password !== confirmarPassword) { setError("Las contraseñas no coinciden."); return; }
-    if (password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres."); return; }
+    if (password.length <= 6) { setError("La contraseña debe tener más de 6 caracteres."); return; }
+    
+    const tieneMayuscula = /[A-Z]/.test(password);
+    const tieneMinuscula = /[a-z]/.test(password);
+    const tieneNumero = /\d/.test(password);
+    const tieneSimbolo = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?#*]/.test(password);
+
+    if (!tieneMayuscula || !tieneMinuscula) {
+      setError("La contraseña debe contener letras mayúsculas y minúsculas.");
+      return;
+    }
+    if (!tieneNumero) {
+      setError("La contraseña debe contener al menos un número.");
+      return;
+    }
+    if (!tieneSimbolo) {
+      setError("La contraseña debe contener al menos un símbolo especial (ej. #, *, @, $, etc.).");
+      return;
+    }
 
     setEnviando(true);
     try {
+      let fotoSelfieUrl = null;
+      let fotoCedulaFrenteUrl = null;
+      let fotoCedulaAtrasUrl = null;
+      let verificadoIa = false;
+      let motivoRechazoIa = null;
+
       if (tab !== "institucional") {
         const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
         if (!cedula || !regexCedula.test(cedula)) {
           throw new Error("Ingresa una cédula nicaragüense válida (ej. 121-041204-1006N).");
         }
+
+        const partesNombre = nombreCompleto.trim().split(/\s+/);
+        if (partesNombre.length < 4) {
+          throw new Error("El nombre completo debe incluir primer nombre, segundo nombre y ambos apellidos (ej. María Alejandra López Pérez).");
+        }
+
+        if (!selfie || !cedulaFrente || !cedulaAtras) {
+          throw new Error("Por seguridad y para evitar spam, debes proporcionar tu selfie y fotos de la cédula (frente y atrás) para validar tu identidad.");
+        }
+
+        setValidandoIdentidad(true);
+        setMensajeValidacion("Escaneando facciones y contrastando cédula con IA biométrica de Groq...");
+
+        const resultado = await llamarValidacionIdentidad({
+          selfieBase64,
+          cedulaFrenteBase64,
+          cedulaAtrasBase64,
+          cedulaEscrita: cedula
+        });
+
+        if (!resultado.valido) {
+          throw new Error(`Verificación de identidad denegada: ${resultado.motivo}`);
+        }
+
+        verificadoIa = true;
+        motivoRechazoIa = resultado.motivo;
+        setMensajeValidacion("Subiendo fotos de verificación a base de datos segura...");
+
+        // Subir a Supabase Storage
+        fotoSelfieUrl = await uploadFile("identidades", selfie, "selfies");
+        fotoCedulaFrenteUrl = await uploadFile("identidades", cedulaFrente, "cedulas_frente");
+        fotoCedulaAtrasUrl = await uploadFile("identidades", cedulaAtras, "cedulas_atras");
       }
 
       if (tab === "ciudadano") {
-        await alRegistroCiudadano({ email, password, cedula, nombreCompleto });
+        await alRegistroCiudadano({
+          email,
+          password,
+          cedula,
+          nombreCompleto,
+          foto_selfie_url: fotoSelfieUrl,
+          foto_cedula_frente_url: fotoCedulaFrenteUrl,
+          foto_cedula_atras_url: fotoCedulaAtrasUrl,
+          verificado_ia: verificadoIa,
+          motivo_rechazo_ia: motivoRechazoIa
+        });
         setExito("¡Registro exitoso! Revisa tu correo para confirmar tu cuenta. Redirigiendo...");
       } else if (tab === "institucional") {
         if (!codigoInvitacion.trim()) throw new Error("Ingresa el código de invitación.");
@@ -55,7 +192,18 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
         setExito("¡Registro institucional exitoso! Tu cuenta ha sido vinculada. Redirigiendo...");
       } else if (tab === "tecnico") {
         if (!codigoInvitacion.trim()) throw new Error("Ingresa el código de acceso.");
-        await alRegistroTecnico({ email, password, nombreCompleto, cedula, codigoInvitacion: codigoInvitacion.trim() });
+        await alRegistroTecnico({
+          email,
+          password,
+          nombreCompleto,
+          cedula,
+          codigoInvitacion: codigoInvitacion.trim(),
+          foto_selfie_url: fotoSelfieUrl,
+          foto_cedula_frente_url: fotoCedulaFrenteUrl,
+          foto_cedula_atras_url: fotoCedulaAtrasUrl,
+          verificado_ia: verificadoIa,
+          motivo_rechazo_ia: motivoRechazoIa
+        });
         setExito("¡Registro técnico exitoso! Ya puedes iniciar sesión. Redirigiendo...");
       }
 
@@ -78,6 +226,7 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
       setError(e.message || "Error al registrarse. Intenta de nuevo.");
     } finally {
       setEnviando(false);
+      setValidandoIdentidad(false);
     }
   };
 
@@ -200,16 +349,117 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                     ))}
                   </div>
 
-                  <form onSubmit={manejarEnvio} className="reg-form">
+                  <form onSubmit={manejarEnvio} className="reg-form" style={{ position: "relative" }}>
+                    {validandoIdentidad && (
+                      <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        style={{
+                          position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
+                          background: "rgba(10, 15, 30, 0.95)", zIndex: 100, display: "flex", flexDirection: "column",
+                          alignItems: "center", justifyContent: "center", borderRadius: "24px", padding: "2rem",
+                          textAlign: "center"
+                        }}
+                      >
+                        <div style={{ position: "relative", width: "120px", height: "120px", border: "2px solid rgba(59, 130, 246, 0.4)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: "1.5rem" }}>
+                          <motion.div
+                            animate={{ y: ["-100%", "100%", "-100%"] }}
+                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                            style={{
+                              position: "absolute", width: "100%", height: "4px", background: "linear-gradient(90deg, transparent, #3b82f6, transparent)",
+                              boxShadow: "0 0 12px #3b82f6", zIndex: 5
+                            }}
+                          />
+                          <span style={{ fontSize: "3rem" }}>🤖</span>
+                        </div>
+                        <h4 style={{ color: "#fff", margin: "0 0 8px", fontSize: "1.2rem", fontWeight: "800" }}>Escaneo de Identidad en Progreso</h4>
+                        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>{mensajeValidacion}</p>
+                      </motion.div>
+                    )}
+
                     {tab !== "institucional" && (
                       <>
                         <div className="reg-input-group">
-                          <label className="reg-label">Nombre Completo</label>
-                          <input type="text" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required={tab !== "institucional"} placeholder="Ej. María López" className="reg-input" />
+                          <label className="reg-label" htmlFor="nombreCompleto">Nombre Completo</label>
+                          <input type="text" id="nombreCompleto" name="nombreCompleto" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required={tab !== "institucional"} placeholder="Ej. María López" className="reg-input" />
                         </div>
                         <div className="reg-input-group">
-                          <label className="reg-label">Cédula de Identidad</label>
-                          <input type="text" value={cedula} onChange={(e) => setCedula(formatearCedula(e.target.value))} required={tab !== "institucional"} placeholder="000-000000-0000X" maxLength={16} className="reg-input reg-input-mono" />
+                          <label className="reg-label" htmlFor="cedula">Cédula de Identidad</label>
+                          <input type="text" id="cedula" name="cedula" value={cedula} onChange={(e) => setCedula(formatearCedula(e.target.value))} required={tab !== "institucional"} placeholder="000-000000-0000X" maxLength={16} className="reg-input reg-input-mono" />
+                        </div>
+
+                        <div className="reg-biometrics-container" style={{ margin: "1.5rem 0", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                          <h4 style={{ color: "#fff", fontSize: "0.95rem", fontWeight: "700", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px", marginBottom: "8px" }}>
+                            🔍 Validación Biométrica de Identidad
+                          </h4>
+                          
+                          <div className="reg-input-group" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                            <label className="reg-label" htmlFor="selfieInput" style={{ alignSelf: "flex-start" }}>Foto de Perfil (Selfie) *</label>
+                            <div 
+                              onClick={() => selfieInputRef.current.click()}
+                              style={{
+                                width: "110px", height: "110px", borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "2px dashed rgba(255,255,255,0.2)",
+                                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", position: "relative",
+                                transition: "all 0.3s"
+                              }}
+                            >
+                              {selfieUrl ? (
+                                <img src={selfieUrl} alt="Selfie" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                <>
+                                  <span style={{ fontSize: "2rem" }}>📸</span>
+                                  <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.6)", textAlign: "center", padding: "0 8px" }}>Tómate una foto</span>
+                                </>
+                              )}
+                              <input type="file" accept="image/*" id="selfieInput" name="selfieInput" ref={selfieInputRef} onChange={manejarSelfie} style={{ display: "none" }} />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div className="reg-input-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              <label className="reg-label" htmlFor="frenteInput">Cédula (Frente) *</label>
+                              <div 
+                                onClick={() => frenteInputRef.current.click()}
+                                style={{
+                                  height: "90px", borderRadius: "14px", background: "rgba(255,255,255,0.05)", border: "2px dashed rgba(255,255,255,0.2)",
+                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", position: "relative",
+                                  transition: "all 0.3s"
+                                }}
+                              >
+                                {cedulaFrenteUrl ? (
+                                  <img src={cedulaFrenteUrl} alt="Cédula Frente" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                  <>
+                                    <span style={{ fontSize: "1.5rem" }}>🪪</span>
+                                    <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)" }}>Lado Frontal</span>
+                                  </>
+                                )}
+                                <input type="file" accept="image/*" id="frenteInput" name="frenteInput" ref={frenteInputRef} onChange={manejarCedulaFrente} style={{ display: "none" }} />
+                              </div>
+                            </div>
+
+                            <div className="reg-input-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              <label className="reg-label" htmlFor="atrasInput">Cédula (Atrás) *</label>
+                              <div 
+                                onClick={() => atrasInputRef.current.click()}
+                                style={{
+                                  height: "90px", borderRadius: "14px", background: "rgba(255,255,255,0.05)", border: "2px dashed rgba(255,255,255,0.2)",
+                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", position: "relative",
+                                  transition: "all 0.3s"
+                                }}
+                              >
+                                {cedulaAtrasUrl ? (
+                                  <img src={cedulaAtrasUrl} alt="Cédula Atrás" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                  <>
+                                    <span style={{ fontSize: "1.5rem" }}>🪪</span>
+                                    <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)" }}>Lado Trasero</span>
+                                  </>
+                                )}
+                                <input type="file" accept="image/*" id="atrasInput" name="atrasInput" ref={atrasInputRef} onChange={manejarCedulaAtras} style={{ display: "none" }} />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </>
                     )}
@@ -220,8 +470,8 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                         animate={{ opacity: 1, height: "auto" }}
                         className="reg-input-group"
                       >
-                        <label className="reg-label">Código de {tab === "tecnico" ? "Acceso" : "Invitación"}</label>
-                        <input type="text" value={codigoInvitacion} onChange={(e) => setCodigoInvitacion(e.target.value.toUpperCase())} required placeholder="Ej. ENACAL-2026" className="reg-input reg-input-code" />
+                        <label className="reg-label" htmlFor="codigoInvitacion">Código de {tab === "tecnico" ? "Acceso" : "Invitación"}</label>
+                        <input type="text" id="codigoInvitacion" name="codigoInvitacion" value={codigoInvitacion} onChange={(e) => setCodigoInvitacion(e.target.value.toUpperCase())} required placeholder="Ej. ENACAL-2026" className="reg-input reg-input-code" />
                         <span className="reg-hint">
                           {tab === "tecnico" ? "Solicita este código a tu líder de cuadrilla." : "Código oficial asignado por el sistema."}
                         </span>
@@ -229,18 +479,18 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                     )}
 
                     <div className="reg-input-group">
-                      <label className="reg-label">Correo Electrónico</label>
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="nombre@ejemplo.com" className="reg-input" />
+                      <label className="reg-label" htmlFor="email">Correo Electrónico</label>
+                      <input type="email" id="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="nombre@ejemplo.com" className="reg-input" />
                     </div>
 
                     <div className="reg-row">
                       <div className="reg-input-group" style={{ flex: 1 }}>
-                        <label className="reg-label">Contraseña</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Mínimo 6" className="reg-input" />
+                        <label className="reg-label" htmlFor="password">Contraseña</label>
+                        <input type="password" id="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Segura (>6 car.)" className="reg-input" />
                       </div>
                       <div className="reg-input-group" style={{ flex: 1 }}>
-                        <label className="reg-label">Confirmar</label>
-                        <input type="password" value={confirmarPassword} onChange={(e) => setConfirmarPassword(e.target.value)} required placeholder="Repetir" className="reg-input" />
+                        <label className="reg-label" htmlFor="confirmarPassword">Confirmar</label>
+                        <input type="password" id="confirmarPassword" name="confirmarPassword" value={confirmarPassword} onChange={(e) => setConfirmarPassword(e.target.value)} required placeholder="Repetir" className="reg-input" />
                       </div>
                     </div>
 
