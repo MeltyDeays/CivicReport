@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useEntidadesSuperAdmin } from "../Controladores/useEntidadesSuperAdmin";
+import { useModeracionSuperAdmin } from "../Controladores/useModeracionSuperAdmin";
 
 export default function SuperAdminDashboardView() {
   const { 
     entidades, 
     problematicas, 
-    error, 
+    error: errorEntidades, 
     creando, 
     crearEntidad,
     eliminarEntidad,
@@ -15,7 +16,24 @@ export default function SuperAdminDashboardView() {
     actualizarProblematica
   } = useEntidadesSuperAdmin();
 
-  const [tabActual, setTabActual] = useState("entidades"); // "entidades" | "problematicas"
+  const {
+    ciudadanos,
+    strikesPendientes,
+    cargando: cargandoMod,
+    error: errorMod,
+    confirmarStrike,
+    rechazarStrike,
+    quitarStrike,
+    registrarPagoMulta,
+    condonarMulta,
+    cambiarEstadoCuenta
+  } = useModeracionSuperAdmin();
+
+  const [tabActual, setTabActual] = useState("entidades"); // "entidades" | "problematicas" | "usuarios"
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+  const [resolucionTexto, setResolucionTexto] = useState({});
+  const [filtroCiudadano, setFiltroCiudadano] = useState("todos"); // todos | activos | suspendidos | baneados
+  const [busquedaCiudadano, setBusquedaCiudadano] = useState("");
   
   // Estados para formulario de Entidad
   const [nombreEntidad, setNombreEntidad] = useState("");
@@ -116,9 +134,26 @@ export default function SuperAdminDashboardView() {
         >
           📋 Catálogo
         </button>
+        <button 
+          onClick={() => setTabActual("usuarios")}
+          style={{
+            flex: isMobile ? '1' : 'none',
+            padding: '12px 20px', borderRadius: '12px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s',
+            background: tabActual === "usuarios" ? '#2563eb' : '#fff',
+            color: tabActual === "usuarios" ? '#fff' : '#64748b',
+            border: tabActual === "usuarios" ? '1px solid #2563eb' : '1px solid #cbd5e1',
+            boxShadow: tabActual === "usuarios" ? '0 4px 6px rgba(37,99,235,0.2)' : 'none'
+          }}
+        >
+          👥 Moderación Usuarios
+        </button>
       </div>
 
-      {error ? <div style={{ background: '#fef2f2', color: '#ef4444', padding: '16px', borderRadius: '12px', marginBottom: '2rem', fontWeight: '700' }}>Error: {error}</div> : null}
+      {(errorEntidades || errorMod) ? (
+        <div style={{ background: '#fef2f2', color: '#ef4444', padding: '16px', borderRadius: '12px', marginBottom: '2rem', fontWeight: '700' }}>
+          Error: {errorEntidades || errorMod}
+        </div>
+      ) : null}
 
       {/* TAB ENTIDADES */}
       {tabActual === "entidades" && (
@@ -391,6 +426,442 @@ export default function SuperAdminDashboardView() {
           </div>
         </div>
       )}
+
+      {/* TAB MODERACIÓN DE USUARIOS */}
+      {tabActual === "usuarios" && (
+        <div style={{ display: 'flex', gap: '2rem', flexDirection: isMobile ? 'column' : 'row' }}>
+          
+          {/* Bandeja de Strikes Pendientes */}
+          <div style={{ flex: isMobile ? '1' : '1.2' }}>
+            <h3 style={{ fontSize: '1.2rem', color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚠️ Denuncias Falsas Reportadas ({strikesPendientes.length})
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {strikesPendientes.length ? (
+                strikesPendientes.map((st) => (
+                  <article key={st.id} style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', fontWeight: '800', background: '#fee2e2', color: '#ef4444', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                          Reportado por: {st.entidad?.nombre || "Entidad"}
+                        </span>
+                        <h4 style={{ margin: '8px 0 2px', fontSize: '1.1rem', color: '#0f172a', fontWeight: '800' }}>
+                          Reporte: "{st.denuncia?.titulo}"
+                        </h4>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem' }}>
+                          Ciudadano: <strong>{st.ciudadano?.nombre_completo}</strong> (Cédula: {st.ciudadano?.cedula})
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>
+                        {new Date(st.creado_el).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                        Motivo de Falsedad (según Entidad):
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.5, fontStyle: 'italic' }}>
+                        "{st.motivo}"
+                      </p>
+                      {st.pruebas_entidad && (
+                        <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#2563eb', wordBreak: 'break-all' }}>
+                          🔗 Pruebas: <a href={st.pruebas_entidad} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>{st.pruebas_entidad}</a>
+                        </p>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Resolución / Comentario del Super Admin (Opcional)"
+                        value={resolucionTexto[st.id] || ""}
+                        onChange={(e) => setResolucionTexto(prev => ({ ...prev, [st.id]: e.target.value }))}
+                        style={{
+                          width: '100%', padding: '10px', borderRadius: '10px',
+                          border: '1px solid #cbd5e1', fontSize: '0.875rem'
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm("¿Rechazar el reporte de falsedad? La denuncia volverá a ser visible y activa.")) {
+                              await rechazarStrike(st.id, st.id_denuncia, resolucionTexto[st.id]);
+                            }
+                          }}
+                          style={{
+                            background: '#f1f5f9', color: '#475569', border: 'none',
+                            padding: '8px 16px', borderRadius: '8px', fontSize: '0.8rem',
+                            fontWeight: '700', cursor: 'pointer'
+                          }}
+                        >
+                          ❌ Descartar
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(`¿Confirmar Strike para ${st.ciudadano?.nombre_completo}? Esto incrementará sus strikes y podría suspender su cuenta.`)) {
+                              await confirmarStrike(st.id, st.id_ciudadano, resolucionTexto[st.id]);
+                            }
+                          }}
+                          style={{
+                            background: '#ef4444', color: '#fff', border: 'none',
+                            padding: '8px 16px', borderRadius: '8px', fontSize: '0.8rem',
+                            fontWeight: '700', cursor: 'pointer', boxShadow: '0 2px 4px rgba(239,68,68,0.2)'
+                          }}
+                        >
+                          ✅ Confirmar Strike
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '3rem', background: '#fff', borderRadius: '20px', border: '1px dashed #cbd5e1' }}>
+                  <p style={{ color: '#64748b', fontWeight: '600' }}>No hay reportes de denuncias falsas pendientes.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Listado de Ciudadanos */}
+          <div style={{ flex: '1' }}>
+            <h3 style={{ fontSize: '1.2rem', color: '#1e293b', marginBottom: '1rem' }}>
+              👥 Ciudadanos Registrados
+            </h3>
+
+            {/* Filtros y Búsqueda */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '12px', border: '1px solid #e2e8f0', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o cédula..."
+                value={busquedaCiudadano}
+                onChange={e => setBusquedaCiudadano(e.target.value)}
+                style={{
+                  width: '100%', padding: '10px', borderRadius: '10px',
+                  border: '1px solid #cbd5e1', fontSize: '0.9rem'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {["todos", "activos", "suspendidos", "baneados"].map(filtro => (
+                  <button
+                    key={filtro}
+                    onClick={() => setFiltroCiudadano(filtro)}
+                    style={{
+                      flex: 1, padding: '6px', borderRadius: '8px', fontSize: '0.75rem',
+                      fontWeight: '700', textTransform: 'capitalize', cursor: 'pointer',
+                      border: '1px solid',
+                      borderColor: filtroCiudadano === filtro ? '#2563eb' : '#cbd5e1',
+                      background: filtroCiudadano === filtro ? '#eff6ff' : '#fff',
+                      color: filtroCiudadano === filtro ? '#2563eb' : '#64748b'
+                    }}
+                  >
+                    {filtro}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {ciudadanos
+                .filter(ciu => {
+                  const matchBusqueda = ciu.nombre_completo.toLowerCase().includes(busquedaCiudadano.toLowerCase()) || ciu.cedula.includes(busquedaCiudadano);
+                  const matchFiltro = 
+                    filtroCiudadano === "todos" ||
+                    (filtroCiudadano === "activos" && ciu.estado_cuenta === "activo") ||
+                    (filtroCiudadano === "suspendidos" && ciu.estado_cuenta === "suspendido") ||
+                    (filtroCiudadano === "baneados" && ciu.estado_cuenta === "baneado");
+                  return matchBusqueda && matchFiltro;
+                })
+                .map(ciu => {
+                  const multasPendientes = ciu.multas?.filter(m => m.estado === 'pendiente') || [];
+                  return (
+                    <div
+                      key={ciu.id}
+                      onClick={() => setUsuarioSeleccionado(ciu)}
+                      style={{
+                        background: '#fff', borderRadius: '16px', padding: '1rem',
+                        border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'transform 0.2s',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                    >
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#0f172a', fontWeight: '800' }}>
+                          {ciu.nombre_completo}
+                        </h4>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          Cédula: {ciu.cedula}
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                          <span style={{
+                            padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700',
+                            background: ciu.estado_cuenta === 'activo' ? '#dcfce7' : ciu.estado_cuenta === 'suspendido' ? '#fef9c3' : '#fee2e2',
+                            color: ciu.estado_cuenta === 'activo' ? '#15803d' : ciu.estado_cuenta === 'suspendido' ? '#a16207' : '#b91c1c'
+                          }}>
+                            {ciu.estado_cuenta.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', fontWeight: '700', color: ciu.strikes_totales > 0 ? '#ef4444' : '#64748b' }}>
+                            ⚠️ {ciu.strikes_totales} Strikes
+                          </span>
+                          {multasPendientes.length > 0 && (
+                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#b91c1c' }}>
+                              💸 C$ {multasPendientes.reduce((acc, m) => acc + Number(m.monto), 0)} pendiente
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span style={{ color: '#cbd5e1', fontSize: '1.25rem' }}>➔</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALLE DE CIUDADANO */}
+      {usuarioSeleccionado && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+          padding: '1rem', backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#fff', padding: '2rem', borderRadius: '24px',
+            maxWidth: '560px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', gap: '1.5rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.4rem', fontWeight: '800' }}>
+                  Detalle del Ciudadano
+                </h3>
+                <button
+                  onClick={() => setUsuarioSeleccionado(null)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#64748b', cursor: 'pointer' }}
+                >
+                  &times;
+                </button>
+              </div>
+              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                Gestiona strikes, multas y estado de cuenta de <strong>{usuarioSeleccionado.nombre_completo}</strong>
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' }}>Cédula</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#334155' }}>{usuarioSeleccionado.cedula}</span>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' }}>Estado de Cuenta</span>
+                <span style={{
+                  padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '800', display: 'inline-block', marginTop: '2px',
+                  background: usuarioSeleccionado.estado_cuenta === 'activo' ? '#dcfce7' : usuarioSeleccionado.estado_cuenta === 'suspendido' ? '#fef9c3' : '#fee2e2',
+                  color: usuarioSeleccionado.estado_cuenta === 'activo' ? '#15803d' : usuarioSeleccionado.estado_cuenta === 'suspendido' ? '#a16207' : '#b91c1c'
+                }}>
+                  {usuarioSeleccionado.estado_cuenta.toUpperCase()}
+                </span>
+              </div>
+              <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Strikes Acumulados</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {[1, 2, 3].map(strikeNum => {
+                    const tieneStrike = usuarioSeleccionado.strikes_totales >= strikeNum;
+                    return (
+                      <div
+                        key={strikeNum}
+                        style={{
+                          flex: 1, height: '10px', borderRadius: '5px',
+                          background: tieneStrike ? '#ef4444' : '#e2e8f0'
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginTop: '4px' }}>
+                  Total: {usuarioSeleccionado.strikes_totales} strikes
+                </span>
+              </div>
+            </div>
+
+            {/* Listado de Multas */}
+            <div>
+              <h4 style={{ margin: '0 0 0.5rem', color: '#1e293b', fontSize: '1rem', fontWeight: '800' }}>
+                💸 Multas del Usuario ({usuarioSeleccionado.multas?.length || 0})
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {usuarioSeleccionado.multas && usuarioSeleccionado.multas.length > 0 ? (
+                  usuarioSeleccionado.multas.map(multa => (
+                    <div key={multa.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', padding: '10px 14px', borderRadius: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#334155' }}>
+                          Multa Nivel {multa.nivel} (C$ {multa.monto})
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>
+                          Generada: {new Date(multa.creado_el).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700',
+                          background: multa.estado === 'pagada' ? '#dcfce7' : multa.estado === 'condonada' ? '#f1f5f9' : '#fee2e2',
+                          color: multa.estado === 'pagada' ? '#15803d' : multa.estado === 'condonada' ? '#475569' : '#b91c1c'
+                        }}>
+                          {multa.estado.toUpperCase()}
+                        </span>
+                        {multa.estado === 'pendiente' && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              onClick={async () => {
+                                if (window.confirm("¿Condonar esta multa?")) {
+                                  await condonarMulta(multa.id, usuarioSeleccionado.id);
+                                  setUsuarioSeleccionado(null);
+                                }
+                              }}
+                              style={{ background: '#f1f5f9', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                            >
+                              Condonar
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (window.confirm("¿Registrar el pago físico de esta multa? La cuenta se reactivará si no quedan multas pendientes.")) {
+                                  await registrarPagoMulta(multa.id, usuarioSeleccionado.id);
+                                  setUsuarioSeleccionado(null);
+                                }
+                              }}
+                              style={{ background: '#10b981', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                            >
+                              Pagar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                    Este usuario no tiene multas registradas.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Información Biométrica y de Identidad */}
+            {(usuarioSeleccionado.foto_selfie_url || usuarioSeleccionado.foto_cedula_frente_url || usuarioSeleccionado.foto_cedula_atras_url) && (
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 4px', color: '#1e293b', fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🪪 Identidad y Biometría</span>
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: '800',
+                    color: usuarioSeleccionado.verificado_ia ? '#10b981' : '#ef4444',
+                    background: usuarioSeleccionado.verificado_ia ? '#e6f4ea' : '#fce8e6',
+                    padding: '2px 8px', borderRadius: '12px'
+                  }}>
+                    {usuarioSeleccionado.verificado_ia ? "✓ Verificado por IA" : "✗ Rechazado / No verificado"}
+                  </span>
+                </h4>
+
+                {usuarioSeleccionado.motivo_rechazo_ia && (
+                  <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                    Motivo IA: "{usuarioSeleccionado.motivo_rechazo_ia}"
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {usuarioSeleccionado.foto_selfie_url && (
+                    <div style={{ flexShrink: 0, width: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b' }}>Selfie (Perfil)</span>
+                      <a href={usuarioSeleccionado.foto_selfie_url} target="_blank" rel="noreferrer" style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #e2e8f0', display: 'block' }}>
+                        <img src={usuarioSeleccionado.foto_selfie_url} alt="Selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </a>
+                    </div>
+                  )}
+                  {usuarioSeleccionado.foto_cedula_frente_url && (
+                    <div style={{ flexShrink: 0, width: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b' }}>Cédula Frente</span>
+                      <a href={usuarioSeleccionado.foto_cedula_frente_url} target="_blank" rel="noreferrer" style={{ width: '110px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e2e8f0', display: 'block' }}>
+                        <img src={usuarioSeleccionado.foto_cedula_frente_url} alt="Cédula Frente" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </a>
+                    </div>
+                  )}
+                  {usuarioSeleccionado.foto_cedula_atras_url && (
+                    <div style={{ flexShrink: 0, width: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b' }}>Cédula Atrás</span>
+                      <a href={usuarioSeleccionado.foto_cedula_atras_url} target="_blank" rel="noreferrer" style={{ width: '110px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e2e8f0', display: 'block' }}>
+                        <img src={usuarioSeleccionado.foto_cedula_atras_url} alt="Cédula Atrás" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Acciones del Administrador */}
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <h4 style={{ margin: '0 0 4px', color: '#1e293b', fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                Acciones de Moderación
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {usuarioSeleccionado.strikes_totales > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("¿Restar 1 strike a este usuario?")) {
+                        await quitarStrike(usuarioSeleccionado.id);
+                        setUsuarioSeleccionado(null);
+                      }
+                    }}
+                    style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    ➖ Quitar Strike
+                  </button>
+                )}
+                {usuarioSeleccionado.estado_cuenta === 'activo' && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("¿Suspender temporalmente la cuenta? El usuario no podrá iniciar sesión.")) {
+                        await cambiarEstadoCuenta(usuarioSeleccionado.id, 'suspendido');
+                        setUsuarioSeleccionado(null);
+                      }
+                    }}
+                    style={{ flex: 1, background: '#fef9c3', color: '#a16207', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    🚫 Suspender Cuenta
+                  </button>
+                )}
+                {usuarioSeleccionado.estado_cuenta !== 'baneado' && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("¿Banear permanentemente a este ciudadano? Solo podrá reactivarse manualmente.")) {
+                        await cambiarEstadoCuenta(usuarioSeleccionado.id, 'baneado');
+                        setUsuarioSeleccionado(null);
+                      }
+                    }}
+                    style={{ flex: 1, background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    💀 Banear Permanente
+                  </button>
+                )}
+                {usuarioSeleccionado.estado_cuenta !== 'activo' && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("¿Reactivar la cuenta del ciudadano ahora mismo?")) {
+                        await cambiarEstadoCuenta(usuarioSeleccionado.id, 'activo');
+                        setUsuarioSeleccionado(null);
+                      }
+                    }}
+                    style={{ flex: 1, background: '#dcfce7', color: '#15803d', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    🎉 Reactivar Cuenta
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Éxito Código */}
       {codigoGenerado && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem', backdropFilter: 'blur(4px)' }}>
