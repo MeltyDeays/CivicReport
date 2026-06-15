@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-export function WebGLShader() {
+export default function WebGLShader() {
   const canvasRef = useRef(null);
   const sceneRef = useRef({
     scene: null,

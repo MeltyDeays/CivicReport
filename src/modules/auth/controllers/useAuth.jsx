@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, createContext, useContext } from "react";
+import { useEffect, useMemo, useState, createContext, useContext, useRef } from "react";
 import { supabase } from "../../../core/supabaseClient";
-import { signInWithEmail, signOut, getSession, registroCiudadano as registroCiudadanoModel, registroInstitucional as registroInstitucionalModel, registroTecnico as registroTecnicoModel, vincularCodigoTecnico as vincularCodigoTecnicoModel } from "../models/authModel";
+import { signInWithEmail, registroCiudadano as registroCiudadanoModel, registroInstitucional as registroInstitucionalModel, registroTecnico as registroTecnicoModel, vincularCodigoTecnico as vincularCodigoTecnicoModel } from "../models/authModel";
 import { fetchProfileByUserId, updateProfile, desactivarCuenta as desactivarCuentaModel } from "../models/profileModel";
 import PantallaBloqueo from "../components/PantallaBloqueo";
 
@@ -12,18 +12,39 @@ function mapRolToAppRole(rolBd) {
   return null;
 }
 
+function getStoredProfile() {
+  try {
+    const saved = localStorage.getItem("civic_profile");
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredProfile(perfil) {
+  try {
+    if (perfil) {
+      localStorage.setItem("civic_profile", JSON.stringify(perfil));
+    } else {
+      localStorage.removeItem("civic_profile");
+    }
+  } catch (err) {
+    console.error("Error al guardar perfil en localStorage:", err);
+  }
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [cargandoSesion, setCargandoSesion] = useState(true);
   const [sesion, setSesion] = useState(null);
-  const [perfil, setPerfil] = useState(() => {
-    try {
-      const saved = localStorage.getItem("civic_profile");
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
+  const [perfil, setPerfil] = useState(() => getStoredProfile());
   const [bloqueoData, setBloqueoData] = useState(null);
+
+  const perfilRef = useRef(perfil);
+  useEffect(() => {
+    perfilRef.current = perfil;
+  }, [perfil]);
 
   const cargarBloqueoData = async (userId) => {
     try {
@@ -89,8 +110,8 @@ export function AuthProvider({ children }) {
           
           if (activo) {
             setPerfil(perfilActual);
+            setStoredProfile(perfilActual);
             if (perfilActual) {
-              localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
               if (perfilActual.estado_cuenta === 'suspendido' || perfilActual.estado_cuenta === 'baneado') {
                 await cargarBloqueoData(session.user.id);
               }
@@ -122,6 +143,7 @@ export function AuthProvider({ children }) {
       if (!nuevaSesion) {
         setSesion(null);
         setPerfil(null);
+        setStoredProfile(null);
         setCargandoSesion(false);
         return;
       }
@@ -130,7 +152,7 @@ export function AuthProvider({ children }) {
       if (nuevaSesion?.user?.id) {
         try {
           // Si ya tenemos el perfil y el ID coincide, no lo volvemos a cargar (evita parpadeos y "vaciado")
-          if (perfil && perfil.id === nuevaSesion.user.id) {
+          if (perfilRef.current && perfilRef.current.id === nuevaSesion.user.id) {
             setCargandoSesion(false);
             return;
           }
@@ -138,8 +160,8 @@ export function AuthProvider({ children }) {
           const perfilActual = await fetchProfileByUserId(nuevaSesion.user.id).catch(() => null);
           if (activo) {
             setPerfil(perfilActual);
+            setStoredProfile(perfilActual);
             if (perfilActual) {
-              localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
               if (perfilActual.estado_cuenta === 'suspendido' || perfilActual.estado_cuenta === 'baneado') {
                 await cargarBloqueoData(nuevaSesion.user.id);
               }
@@ -149,6 +171,7 @@ export function AuthProvider({ children }) {
         } catch {
           if (activo) {
             setPerfil(null);
+            setStoredProfile(null);
             setCargandoSesion(false);
           }
         }
@@ -182,27 +205,25 @@ export function AuthProvider({ children }) {
           try {
             let perfilActual = await fetchProfileByUserId(sesionNueva.user.id);
             
-            // Auto-reparación: Si no hay perfil pero hay sesión (ej. fallo RLS en registro)
             if (!perfilActual) {
-              console.log("Perfil no encontrado, intentando auto-creación...");
+              console.warn("Perfil no visible por RLS, construyendo desde JWT metadata...");
               const meta = sesionNueva.user.user_metadata || {};
-              const { error: insertError } = await supabase.from("perfiles").insert([{
+              perfilActual = {
                 id: sesionNueva.user.id,
                 nombre_completo: meta.nombre_completo || sesionNueva.user.email.split('@')[0],
-                cedula: meta.cedula || `AUTO-${Date.now()}`,
+                cedula: meta.cedula || "",
                 rol: meta.rol || "ciudadano",
                 id_entidad: meta.id_entidad || null,
-                especialidad: meta.especialidad || "general"
-              }]);
-              
-              if (!insertError) {
-                perfilActual = await fetchProfileByUserId(sesionNueva.user.id);
-              }
+                especialidad: meta.especialidad || "general",
+                activo: true,
+                estado_cuenta: "activo",
+                creado_el: new Date().toISOString()
+              };
             }
             
             setPerfil(perfilActual);
+            setStoredProfile(perfilActual);
             if (perfilActual) {
-              localStorage.setItem("civic_profile", JSON.stringify(perfilActual));
               if (perfilActual.estado_cuenta === 'suspendido' || perfilActual.estado_cuenta === 'baneado') {
                 await cargarBloqueoData(sesionNueva.user.id);
               }
@@ -221,7 +242,7 @@ export function AuthProvider({ children }) {
           setPerfil(null);
           supabase.auth.signOut().catch(() => {});
           window.location.href = "/";
-        } catch (error) {
+        } catch {
           localStorage.clear();
           window.location.href = "/";
         }
@@ -243,6 +264,7 @@ export function AuthProvider({ children }) {
         if (!sesion?.user?.id) throw new Error("Debes iniciar sesión primero.");
         const perfilActualizado = await updateProfile(sesion.user.id, campos);
         setPerfil(perfilActualizado);
+        setStoredProfile(perfilActualizado);
         return perfilActualizado;
       },
       async solicitarBaja() {
@@ -273,6 +295,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

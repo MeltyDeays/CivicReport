@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useCuadrillas } from "../Controladores/useCuadrillas";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const EMOJIS_ESPECIALIDAD = {
   ingeniero: "🧠",
   operador_maquinaria: "🛡️",
@@ -21,7 +22,7 @@ const NOMBRES_ESPECIALIDAD = {
 
 export default function CuadrillasView() {
   const { 
-    tecnicos, cuadrillas, invitaciones, cargando, error, 
+    tecnicos, cuadrillas, invitaciones, error, 
     crearCuadrilla, alternarEstado, eliminarCuadrilla, 
     generarInvitacion, eliminarInvitacion, editarInvitacion,
     editarTecnico, desactivarTecnico, reactivarTecnico

@@ -54,7 +54,7 @@ export async function validarReporteAntiSpam(nuevoReporte) {
     }
   }
 
-  // Fallback Heurístico Local (si no hay clave Groq o falla la red)
+  // Fallback heurístico local (sin claves Groq en .env.local o fallo de red)
   if (reportesCercanos.length > 0) {
     // Buscar si alguna palabra clave del título coincide con las denuncias cercanas
     const palabrasNuevas = nuevoReporte.titulo.toLowerCase().split(/\s+/).filter(w => w.length > 3);
@@ -108,7 +108,7 @@ export async function procesarInventarioDesdeTexto(textoResolucion, entidadId) {
     }
   }
 
-  // Fallback Heurístico Local con Expresiones Regulares (si no hay clave Groq)
+  // Fallback heurístico local (sin claves Groq en .env.local)
   // Busca patrones como "3 sacos", "2 tubos", "5 bolsas" combinados con nombres de materiales
   const palabrasTexto = textoResolucion.toLowerCase();
   for (const mat of catalogo) {
@@ -170,7 +170,7 @@ async function aplicarDescuentoInventario(entidadId, materialId, cantidadADescue
 export async function generarReporteEjecutivoSemanal(entidadId) {
   try {
     // Obtener información de la entidad
-    const { data: entidad, error: errEnt } = await supabase
+    const { data: entidad } = await supabase
       .from("entidades_admin")
       .select("nombre")
       .eq("id", entidadId)
@@ -179,7 +179,7 @@ export async function generarReporteEjecutivoSemanal(entidadId) {
     const nombreEntidad = entidad?.nombre || "la entidad";
 
     // Obtener problemáticas asignadas a esta entidad para filtrar denuncias
-    const { data: entProbs, error: errProbs } = await supabase
+    const { data: entProbs } = await supabase
       .from("entidad_problematica")
       .select("problematica:problematicas(nombre)")
       .eq("entidad_id", entidadId);

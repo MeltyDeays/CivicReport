@@ -54,7 +54,10 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
   
   const fileInputRef = useRef(null);
 
+  const reporteInicialId = reporteInicial?.id;
+
   useEffect(() => {
+    if (!abierto) return;
     if (!reporteInicial) {
       setFormulario(FORMULARIO_VACIO);
       setMapPosition(null);
@@ -80,11 +83,15 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
       setMapPosition(null);
       setUbicacionFijada(false);
     }
-  }, [reporteInicial]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto, reporteInicialId]);
 
   useEffect(() => {
     if (mapPosition) {
-      setFormulario((prev) => ({ ...prev, lat: mapPosition.lat, lng: mapPosition.lng }));
+      setFormulario((prev) => {
+        if (prev.lat === mapPosition.lat && prev.lng === mapPosition.lng) return prev;
+        return { ...prev, lat: mapPosition.lat, lng: mapPosition.lng };
+      });
     }
   }, [mapPosition]);
 
@@ -99,6 +106,7 @@ export default function ModalFormularioReporte({ abierto, modo, reporteInicial, 
       }
     }
     loadProblematicas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!abierto) return null;

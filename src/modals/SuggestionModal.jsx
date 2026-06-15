@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { DEPARTAMENTOS_NICARAGUA } from "../utils/constants";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -43,8 +43,19 @@ export default function ModalSugerencia({ estaAbierto, alCerrar, alEnviar }) {
   const [calibrandoGps, setCalibrandoGps] = useState(false);
 
   useEffect(() => {
+    if (estaAbierto) {
+      setFormulario(FORMULARIO_INICIAL);
+      setMapPosition(null);
+      setError("");
+    }
+  }, [estaAbierto]);
+
+  useEffect(() => {
     if (mapPosition) {
-      setFormulario(prev => ({ ...prev, lat: mapPosition.lat, lng: mapPosition.lng }));
+      setFormulario(prev => {
+        if (prev.lat === mapPosition.lat && prev.lng === mapPosition.lng) return prev;
+        return { ...prev, lat: mapPosition.lat, lng: mapPosition.lng };
+      });
     }
   }, [mapPosition]);
 

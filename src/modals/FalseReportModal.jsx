@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { uploadFile } from "../services/storageService";
 
 export default function FalseReportModal({ abierto, alCerrar, alConfirmar, cargando }) {
   const [motivo, setMotivo] = useState("");
-  const [pruebas, setPruebas] = useState("");
+  const [pruebasUrl, setPruebasUrl] = useState("");
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
 
   if (!abierto) return null;
 
@@ -12,7 +14,25 @@ export default function FalseReportModal({ abierto, alCerrar, alConfirmar, carga
       alert("Por favor, describe con mayor detalle el motivo (mínimo 20 caracteres).");
       return;
     }
-    alConfirmar({ motivo, pruebas });
+    if (!pruebasUrl) {
+      alert("Por favor, sube una foto de evidencia que respalde la falsedad.");
+      return;
+    }
+    alConfirmar({ motivo, pruebas: pruebasUrl });
+  };
+
+  const manejarArchivo = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSubiendoArchivo(true);
+    try {
+      const url = await uploadFile("evidencias", file, "falsedades");
+      setPruebasUrl(url);
+    } catch (err) {
+      alert("Error al subir el archivo: " + err.message);
+    } finally {
+      setSubiendoArchivo(false);
+    }
   };
 
   return (
@@ -54,41 +74,59 @@ export default function FalseReportModal({ abierto, alCerrar, alConfirmar, carga
 
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#475569', marginBottom: '8px' }}>
-              Pruebas Adicionales (Opcional)
+              Subir Foto de Evidencia (Obligatorio) *
             </label>
-            <input
-              type="text"
-              placeholder="Enlace a fotos de inspección o notas técnicas"
-              value={pruebas}
-              onChange={e => setPruebas(e.target.value)}
-              style={{
-                width: '100%', padding: '12px', borderRadius: '10px',
-                border: '1px solid #cbd5e1', fontSize: '0.95rem'
-              }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={manejarArchivo}
+                disabled={subiendoArchivo || cargando}
+                style={{
+                  width: '100%', padding: '10px', borderRadius: '10px',
+                  border: '1px solid #cbd5e1', fontSize: '0.95rem'
+                }}
+              />
+              {subiendoArchivo && (
+                <span style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: '700' }}>
+                  ⏳ Subiendo archivo...
+                </span>
+              )}
+              {pruebasUrl && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f0fdf4', padding: '10px 14px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                  <span style={{ fontSize: '1.25rem' }}>✅</span>
+                  <div>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#16a34a', fontWeight: '700' }}>Evidencia cargada con éxito</p>
+                    <a href={pruebasUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: '700', textDecoration: 'underline' }}>
+                      Ver archivo subido
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
             <button
               type="button"
               onClick={alCerrar}
-              disabled={cargando}
+              disabled={cargando || subiendoArchivo}
               style={{
                 background: '#f1f5f9', color: '#475569', border: 'none',
                 padding: '12px 20px', borderRadius: '10px', fontWeight: '700',
-                cursor: 'pointer', fontSize: '0.9rem'
+                cursor: (cargando || subiendoArchivo) ? 'not-allowed' : 'pointer', fontSize: '0.9rem'
               }}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={cargando || motivo.trim().length < 20}
+              disabled={cargando || subiendoArchivo || motivo.trim().length < 20 || !pruebasUrl}
               style={{
                 background: '#ef4444', color: '#fff', border: 'none',
                 padding: '12px 20px', borderRadius: '10px', fontWeight: '700',
-                cursor: (cargando || motivo.trim().length < 20) ? 'not-allowed' : 'pointer',
-                opacity: (cargando || motivo.trim().length < 20) ? 0.6 : 1,
+                cursor: (cargando || subiendoArchivo || motivo.trim().length < 20 || !pruebasUrl) ? 'not-allowed' : 'pointer',
+                opacity: (cargando || subiendoArchivo || motivo.trim().length < 20 || !pruebasUrl) ? 0.6 : 1,
                 fontSize: '0.9rem'
               }}
             >

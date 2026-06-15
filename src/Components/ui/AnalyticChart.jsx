@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 export default function AnalyticChart({ grafico }) {
-  if (!grafico || !grafico.datos || !Array.isArray(grafico.datos)) return null;
-
   const [idUnico] = useState(() => 'grafico_' + Math.random().toString(36).substring(2, 9));
+
+  if (!grafico || !grafico.datos || !Array.isArray(grafico.datos)) return null;
 
   const descargarComoImagen = (tipoGrafico, id) => {
     const svgEl = document.querySelector(`#${id} svg`);

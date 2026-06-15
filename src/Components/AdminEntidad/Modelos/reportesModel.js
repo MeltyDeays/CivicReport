@@ -24,7 +24,7 @@ export const adminEntidadReportesModel = {
     const { data, error } = await supabase
       .from("denuncias")
       .select(`
-        id,entidad_id,titulo,descripcion,estado,prioridad,categoria,url_imagen,direccion,departamento,municipio,ubicacion,creado_el,actualizado_el,problematica_id,es_visible,
+        id,id_ciudadano,entidad_id,titulo,descripcion,estado,prioridad,categoria,url_imagen,direccion,departamento,municipio,ubicacion,creado_el,actualizado_el,problematica_id,es_visible,es_falso_reporte,
         problematica:problematicas(id,nombre,icono),
         firmas:firmas(count)
       `)

@@ -12,7 +12,10 @@ export function useSugerenciasCiudadano() {
   }, []);
 
   useEffect(() => {
-    cargarSugerencias();
+    const timer = setTimeout(() => {
+      cargarSugerencias();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [cargarSugerencias]);
 
   const crear = useCallback(async (payload) => {

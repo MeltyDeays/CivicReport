@@ -96,6 +96,7 @@ export function useMapaCalor() {
 
       // 2. Auto-ocultar completados de más de 8 horas
       if (r.estado === 'completado' && r.actualizado_el) {
+        // eslint-disable-next-line react-hooks/purity
         const ahora = Date.now();
         const OCHO_HORAS_MS = 8 * 60 * 60 * 1000;
         const tiempoTranscurrido = ahora - new Date(r.actualizado_el).getTime();

@@ -14,6 +14,16 @@ export default function RepairOrderModal({ abierto, entidadId, denuncia, tecnico
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
+    if (abierto) {
+      setSeleccion({});
+      setError("");
+      setTipoAsignacion("solo");
+      setTecnicoSeleccionado(tecnicoIdProp || "");
+      setCuadrillaSeleccionada("");
+    }
+  }, [abierto, tecnicoIdProp]);
+
+  useEffect(() => {
     let activo = true;
     async function cargar() {
       if (!abierto || !entidadId) return;

@@ -1,4 +1,6 @@
 import { supabase } from "../../../core/supabaseClient";
+import { uploadFile } from "../../../services/storageService";
+
 export async function signInWithEmail(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw new Error(error.message);
@@ -17,8 +19,15 @@ export async function getSession() {
  * H001 — Registro Ciudadano
  * Crea usuario en auth.users + perfil en tabla perfiles con rol "ciudadano".
  */
-export async function registroCiudadano({ email, password, cedula, nombreCompleto, foto_selfie_url, foto_cedula_frente_url, foto_cedula_atras_url, verificado_ia, motivo_rechazo_ia }) {
-  // 1. Crear usuario en Supabase Auth
+export async function registroCiudadano({ email, password, cedula, nombreCompleto, selfieFile, cedulaFrenteFile, cedulaAtrasFile, verificado_ia, motivo_rechazo_ia }) {
+  const { data: cedulaExistente } = await supabase
+    .from("perfiles")
+    .select("id")
+    .eq("cedula", cedula)
+    .eq("rol", "ciudadano")
+    .maybeSingle();
+  if (cedulaExistente) throw new Error("Ya existe una cuenta registrada con esta cédula de identidad.");
+
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -29,22 +38,36 @@ export async function registroCiudadano({ email, password, cedula, nombreComplet
   if (authError) throw new Error(authError.message);
   const userId = authData.user?.id;
   if (!userId) throw new Error("No se pudo obtener el ID del usuario creado.");
-  // 2. Crear perfil ciudadano
-  const { error: perfilError } = await supabase.from("perfiles").insert([{
-    id: userId,
-    cedula,
-    nombre_completo: nombreCompleto,
-    rol: "ciudadano",
-    id_entidad: null,
-    foto_selfie_url,
-    foto_cedula_frente_url,
-    foto_cedula_atras_url,
-    verificado_ia,
-    motivo_rechazo_ia
-  }]);
-  if (perfilError) throw new Error(`Usuario creado pero falló el perfil: ${perfilError.message}`);
+
+  let foto_selfie_url = null;
+  let foto_cedula_frente_url = null;
+  let foto_cedula_atras_url = null;
+
+  if (selfieFile) {
+    foto_selfie_url = await uploadFile("identidades", selfieFile, "selfies");
+  }
+  if (cedulaFrenteFile) {
+    foto_cedula_frente_url = await uploadFile("identidades", cedulaFrenteFile, "cedulas_frente");
+  }
+  if (cedulaAtrasFile) {
+    foto_cedula_atras_url = await uploadFile("identidades", cedulaAtrasFile, "cedulas_atras");
+  }
+
+  if (foto_selfie_url || foto_cedula_frente_url || foto_cedula_atras_url) {
+    await supabase.from("perfiles").update({
+      foto_selfie_url, 
+      foto_cedula_frente_url, 
+      foto_cedula_atras_url,
+      verificado_ia, 
+      motivo_rechazo_ia
+    }).eq("id", userId);
+  }
+
+  await supabase.auth.signOut();
   return authData;
 }
+
+
 /**
  * H022 — Registro Institucional (Admin Entidad)
  * Valida código de invitación → Crea usuario → Crea perfil con rol "admin_entidad" → Marca código como usado.
@@ -73,27 +96,18 @@ export async function registroInstitucional({ email, password, nombreCompleto, c
   if (authError) throw new Error(authError.message);
   const userId = authData.user?.id;
   if (!userId) throw new Error("No se pudo obtener el ID del usuario creado.");
-  // 3. Crear perfil admin_entidad vinculado a la entidad
-  const { error: perfilError } = await supabase.from("perfiles").insert([{
-    id: userId,
-    cedula: cedulaFinal,
-    nombre_completo: nombreFinal,
-    rol: "admin_entidad",
-    id_entidad: entidad.id,
-  }]);
-  if (perfilError) throw new Error(`Usuario creado pero falló el perfil: ${perfilError.message}`);
-  // 4. Marcar código como usado
   await supabase
     .from("entidades_admin")
     .update({ esta_usado: true })
     .eq("id", entidad.id);
+  await supabase.auth.signOut();
   return { ...authData, entidadNombre: entidad.nombre };
 }
 /**
  * H026 / V7 — Registro Técnico
  * Valida código de invitación (no lo marca como usado) → Crea usuario → Crea perfil con rol "tecnico" y "especialidad".
  */
-export async function registroTecnico({ email, password, nombreCompleto, cedula, codigoInvitacion, foto_selfie_url, foto_cedula_frente_url, foto_cedula_atras_url, verificado_ia, motivo_rechazo_ia }) {
+export async function registroTecnico({ email, password, nombreCompleto, cedula, codigoInvitacion, selfieFile, cedulaFrenteFile, cedulaAtrasFile, verificado_ia, motivo_rechazo_ia }) {
   // 1. Validar que la invitación exista, no esté usada
   const { data: invitacion, error: invError } = await supabase
     .from("invitaciones_empleados")
@@ -113,26 +127,36 @@ export async function registroTecnico({ email, password, nombreCompleto, cedula,
   if (authError) throw new Error(authError.message);
   const userId = authData.user?.id;
   if (!userId) throw new Error("No se pudo obtener el ID del usuario creado.");
-  // 3. Crear perfil tecnico vinculado a la entidad
-  const { error: perfilError } = await supabase.from("perfiles").insert([{
-    id: userId,
-    cedula,
-    nombre_completo: nombreCompleto,
-    rol: "tecnico",
-    id_entidad: invitacion.entidad_id,
-    especialidad: invitacion.especialidad,
-    foto_selfie_url,
-    foto_cedula_frente_url,
-    foto_cedula_atras_url,
-    verificado_ia,
-    motivo_rechazo_ia
-  }]);
-  if (perfilError) throw new Error(`Usuario creado pero falló el perfil: ${perfilError.message}`);
-  // 4. Marcar la invitación como usada
+
+  let foto_selfie_url = null;
+  let foto_cedula_frente_url = null;
+  let foto_cedula_atras_url = null;
+
+  if (selfieFile) {
+    foto_selfie_url = await uploadFile("identidades", selfieFile, "selfies");
+  }
+  if (cedulaFrenteFile) {
+    foto_cedula_frente_url = await uploadFile("identidades", cedulaFrenteFile, "cedulas_frente");
+  }
+  if (cedulaAtrasFile) {
+    foto_cedula_atras_url = await uploadFile("identidades", cedulaAtrasFile, "cedulas_atras");
+  }
+
+  if (foto_selfie_url || foto_cedula_frente_url || foto_cedula_atras_url) {
+    await supabase.from("perfiles").update({
+      foto_selfie_url, 
+      foto_cedula_frente_url, 
+      foto_cedula_atras_url,
+      verificado_ia, 
+      motivo_rechazo_ia
+    }).eq("id", userId);
+  }
+
   await supabase
     .from("invitaciones_empleados")
     .update({ usado: true })
     .eq("id", invitacion.id);
+  await supabase.auth.signOut();
   return { ...authData, entidadId: invitacion.entidad_id };
 }
 /**

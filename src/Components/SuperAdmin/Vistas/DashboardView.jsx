@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useEntidadesSuperAdmin } from "../Controladores/useEntidadesSuperAdmin";
 import { useModeracionSuperAdmin } from "../Controladores/useModeracionSuperAdmin";
+import { parsearPuntoGeo } from "../../../utils/formatters";
 
 export default function SuperAdminDashboardView() {
   const { 
@@ -19,7 +20,6 @@ export default function SuperAdminDashboardView() {
   const {
     ciudadanos,
     strikesPendientes,
-    cargando: cargandoMod,
     error: errorMod,
     confirmarStrike,
     rechazarStrike,
@@ -45,11 +45,11 @@ export default function SuperAdminDashboardView() {
   const [descProb, setDescProb] = useState("");
   const [iconoProb, setIconoProb] = useState("📋");
 
-  const [editandoEntidad, setEditandoEntidad] = useState(null);
   const [editandoProblematica, setEditandoProblematica] = useState(null);
   const [editNombreProb, setEditNombreProb] = useState("");
   const [editIconoProb, setEditIconoProb] = useState("");
   const [codigoGenerado, setCodigoGenerado] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const handleCrearEntidad = async (e) => {
     e.preventDefault();
@@ -247,7 +247,12 @@ export default function SuperAdminDashboardView() {
                         >{isMobile ? '✏️' : '✏️ Editar'}</button>
                         <button 
                           onClick={() => {
-                            if(window.confirm("¿Eliminar " + entidad.nombre + "?")) eliminarEntidad(entidad.id);
+                            setConfirmConfig({
+                              titulo: "Eliminar Entidad",
+                              mensaje: `¿Seguro que deseas eliminar la entidad "${entidad.nombre}"? Esta acción no se puede deshacer.`,
+                              tipo: "danger",
+                              alConfirmar: () => eliminarEntidad(entidad.id)
+                            });
                           }}
                           style={{ background: '#fef2f2', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#ef4444', cursor: 'pointer' }}
                         >🗑️</button>
@@ -401,13 +406,18 @@ export default function SuperAdminDashboardView() {
                               style={{ flex: 1, background: '#f1f5f9', border: 'none', padding: '8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#475569', cursor: 'pointer' }}
                             >✏️ Editar</button>
                             <button 
-                              onClick={async () => {
-                                if (window.confirm(`¿Seguro que quieres eliminar "${prob.nombre}"? Afectará a los reportes ligados.`)) {
-                                  const res = await eliminarProblematica(prob.id);
-                                  if (!res.success) {
-                                    alert("No se puede eliminar: tiene reportes asociados o ocurrió un error.\n\nDetalle técnico: " + res.error);
+                              onClick={() => {
+                                setConfirmConfig({
+                                  titulo: "Eliminar Problemática",
+                                  mensaje: `¿Seguro que quieres eliminar la problemática "${prob.nombre}"? Afectará a los reportes ligados.`,
+                                  tipo: "danger",
+                                  alConfirmar: async () => {
+                                    const res = await eliminarProblematica(prob.id);
+                                    if (!res.success) {
+                                      alert("No se puede eliminar: tiene reportes asociados o ocurrió un error.\n\nDetalle técnico: " + res.error);
+                                    }
                                   }
-                                }
+                                });
                               }}
                               style={{ background: '#fef2f2', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#ef4444', cursor: 'pointer' }}
                             >🗑️ Eliminar</button>
@@ -438,38 +448,102 @@ export default function SuperAdminDashboardView() {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {strikesPendientes.length ? (
-                strikesPendientes.map((st) => (
-                  <article key={st.id} style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', fontWeight: '800', background: '#fee2e2', color: '#ef4444', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
-                          Reportado por: {st.entidad?.nombre || "Entidad"}
+                strikesPendientes.map((st) => {
+                  const coords = parsearPuntoGeo(st.denuncia?.ubicacion);
+                  return (
+                    <article key={st.id} style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '800', background: '#fee2e2', color: '#ef4444', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                            Reportado por: {st.entidad?.nombre || "Entidad"}
+                          </span>
+                          <h4 style={{ margin: '8px 0 2px', fontSize: '1.1rem', color: '#0f172a', fontWeight: '800' }}>
+                            Reporte: "{st.denuncia?.titulo}"
+                          </h4>
+                          <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem' }}>
+                            Ciudadano: <strong>{st.ciudadano?.nombre_completo}</strong> (Cédula: {st.ciudadano?.cedula})
+                          </p>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>
+                          {new Date(st.creado_el).toLocaleDateString()}
                         </span>
-                        <h4 style={{ margin: '8px 0 2px', fontSize: '1.1rem', color: '#0f172a', fontWeight: '800' }}>
-                          Reporte: "{st.denuncia?.titulo}"
-                        </h4>
-                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem' }}>
-                          Ciudadano: <strong>{st.ciudadano?.nombre_completo}</strong> (Cédula: {st.ciudadano?.cedula})
-                        </p>
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>
-                        {new Date(st.creado_el).toLocaleDateString()}
-                      </span>
-                    </div>
 
-                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
-                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
-                        Motivo de Falsedad (según Entidad):
-                      </p>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.5, fontStyle: 'italic' }}>
-                        "{st.motivo}"
-                      </p>
-                      {st.pruebas_entidad && (
-                        <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#2563eb', wordBreak: 'break-all' }}>
-                          🔗 Pruebas: <a href={st.pruebas_entidad} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>{st.pruebas_entidad}</a>
+                      {/* Dirección del Reporte y Botón de Mapa */}
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569' }}>
+                          📍 <strong>Dirección:</strong> {st.denuncia?.direccion || "Sin dirección exacta"}, {st.denuncia?.municipio || ""}, {st.denuncia?.departamento || ""}
                         </p>
-                      )}
-                    </div>
+                        {coords && (
+                          <div style={{ marginTop: '4px' }}>
+                            <a
+                              href={`https://www.google.com/maps?q=${coords.lat},${coords.lng}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '0.8rem',
+                                color: '#2563eb',
+                                fontWeight: '700',
+                                textDecoration: 'none',
+                                padding: '6px 12px',
+                                background: '#eff6ff',
+                                borderRadius: '8px',
+                                border: '1px solid #bfdbfe',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#dbeafe'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = '#eff6ff'}
+                            >
+                              🗺️ Ver ubicación en Google Maps
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                        <p style={{ margin: '0 0 6px', fontSize: '0.8rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                          Motivo de Falsedad (según Entidad):
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.5, fontStyle: 'italic' }}>
+                          "{st.motivo}"
+                        </p>
+                        {st.pruebas_entidad && (
+                          <div style={{ marginTop: '12px' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: '0.8rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                              Evidencia de la Entidad:
+                            </p>
+                            {st.pruebas_entidad.match(/\.(jpeg|jpg|gif|png|webp)/i) || st.pruebas_entidad.includes('supabase') ? (
+                              <a
+                                href={st.pruebas_entidad}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'inline-block',
+                                  borderRadius: '12px',
+                                  overflow: 'hidden',
+                                  border: '1px solid #cbd5e1',
+                                  transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                              >
+                                <img
+                                  src={st.pruebas_entidad}
+                                  alt="Evidencia cargada por la entidad"
+                                  style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                                />
+                              </a>
+                            ) : (
+                              <p style={{ margin: 0, fontSize: '0.8rem', color: '#2563eb', wordBreak: 'break-all' }}>
+                                🔗 Pruebas: <a href={st.pruebas_entidad} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>{st.pruebas_entidad}</a>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <input
@@ -484,10 +558,13 @@ export default function SuperAdminDashboardView() {
                       />
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                         <button
-                          onClick={async () => {
-                            if (window.confirm("¿Rechazar el reporte de falsedad? La denuncia volverá a ser visible y activa.")) {
-                              await rechazarStrike(st.id, st.id_denuncia, resolucionTexto[st.id]);
-                            }
+                          onClick={() => {
+                            setConfirmConfig({
+                              titulo: "Descartar Reporte",
+                              mensaje: "¿Rechazar el reporte de falsedad? La denuncia volverá a ser visible y activa.",
+                              tipo: "warning",
+                              alConfirmar: () => rechazarStrike(st.id, st.id_denuncia, resolucionTexto[st.id])
+                            });
                           }}
                           style={{
                             background: '#f1f5f9', color: '#475569', border: 'none',
@@ -498,10 +575,13 @@ export default function SuperAdminDashboardView() {
                           ❌ Descartar
                         </button>
                         <button
-                          onClick={async () => {
-                            if (window.confirm(`¿Confirmar Strike para ${st.ciudadano?.nombre_completo}? Esto incrementará sus strikes y podría suspender su cuenta.`)) {
-                              await confirmarStrike(st.id, st.id_ciudadano, resolucionTexto[st.id]);
-                            }
+                          onClick={() => {
+                            setConfirmConfig({
+                              titulo: "Confirmar Strike",
+                              mensaje: `¿Confirmar Strike para ${st.ciudadano?.nombre_completo}? Esto incrementará sus strikes y podría suspender su cuenta.`,
+                              tipo: "danger",
+                              alConfirmar: () => confirmarStrike(st.id, st.id_ciudadano, resolucionTexto[st.id])
+                            });
                           }}
                           style={{
                             background: '#ef4444', color: '#fff', border: 'none',
@@ -514,7 +594,8 @@ export default function SuperAdminDashboardView() {
                       </div>
                     </div>
                   </article>
-                ))
+                );
+              })
               ) : (
                 <div style={{ textAlign: 'center', padding: '3rem', background: '#fff', borderRadius: '20px', border: '1px dashed #cbd5e1' }}>
                   <p style={{ color: '#64748b', fontWeight: '600' }}>No hay reportes de denuncias falsas pendientes.</p>
@@ -714,22 +795,32 @@ export default function SuperAdminDashboardView() {
                         {multa.estado === 'pendiente' && (
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button
-                              onClick={async () => {
-                                if (window.confirm("¿Condonar esta multa?")) {
-                                  await condonarMulta(multa.id, usuarioSeleccionado.id);
-                                  setUsuarioSeleccionado(null);
-                                }
+                              onClick={() => {
+                                setConfirmConfig({
+                                  titulo: "Condonar Multa",
+                                  mensaje: "¿Seguro que deseas condonar esta multa al ciudadano? Esta acción es irreversible.",
+                                  tipo: "warning",
+                                  alConfirmar: async () => {
+                                    await condonarMulta(multa.id, usuarioSeleccionado.id);
+                                    setUsuarioSeleccionado(null);
+                                  }
+                                });
                               }}
                               style={{ background: '#f1f5f9', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
                             >
                               Condonar
                             </button>
                             <button
-                              onClick={async () => {
-                                if (window.confirm("¿Registrar el pago físico de esta multa? La cuenta se reactivará si no quedan multas pendientes.")) {
-                                  await registrarPagoMulta(multa.id, usuarioSeleccionado.id);
-                                  setUsuarioSeleccionado(null);
-                                }
+                              onClick={() => {
+                                setConfirmConfig({
+                                  titulo: "Registrar Pago",
+                                  mensaje: "¿Registrar el pago físico de esta multa? La cuenta del ciudadano se reactivará si no quedan multas pendientes.",
+                                  tipo: "success",
+                                  alConfirmar: async () => {
+                                    await registrarPagoMulta(multa.id, usuarioSeleccionado.id);
+                                    setUsuarioSeleccionado(null);
+                                  }
+                                });
                               }}
                               style={{ background: '#10b981', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                             >
@@ -806,11 +897,16 @@ export default function SuperAdminDashboardView() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {usuarioSeleccionado.strikes_totales > 0 && (
                   <button
-                    onClick={async () => {
-                      if (window.confirm("¿Restar 1 strike a este usuario?")) {
-                        await quitarStrike(usuarioSeleccionado.id);
-                        setUsuarioSeleccionado(null);
-                      }
+                    onClick={() => {
+                      setConfirmConfig({
+                        titulo: "Quitar Strike",
+                        mensaje: `¿Deseas restar 1 strike a ${usuarioSeleccionado.nombre_completo}?`,
+                        tipo: "warning",
+                        alConfirmar: async () => {
+                          await quitarStrike(usuarioSeleccionado.id);
+                          setUsuarioSeleccionado(null);
+                        }
+                      });
                     }}
                     style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
                   >
@@ -819,11 +915,16 @@ export default function SuperAdminDashboardView() {
                 )}
                 {usuarioSeleccionado.estado_cuenta === 'activo' && (
                   <button
-                    onClick={async () => {
-                      if (window.confirm("¿Suspender temporalmente la cuenta? El usuario no podrá iniciar sesión.")) {
-                        await cambiarEstadoCuenta(usuarioSeleccionado.id, 'suspendido');
-                        setUsuarioSeleccionado(null);
-                      }
+                    onClick={() => {
+                      setConfirmConfig({
+                        titulo: "Suspender Cuenta",
+                        mensaje: `¿Suspender temporalmente la cuenta de ${usuarioSeleccionado.nombre_completo}? El usuario no podrá iniciar sesión en la plataforma.`,
+                        tipo: "warning",
+                        alConfirmar: async () => {
+                          await cambiarEstadoCuenta(usuarioSeleccionado.id, 'suspendido');
+                          setUsuarioSeleccionado(null);
+                        }
+                      });
                     }}
                     style={{ flex: 1, background: '#fef9c3', color: '#a16207', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
                   >
@@ -832,11 +933,16 @@ export default function SuperAdminDashboardView() {
                 )}
                 {usuarioSeleccionado.estado_cuenta !== 'baneado' && (
                   <button
-                    onClick={async () => {
-                      if (window.confirm("¿Banear permanentemente a este ciudadano? Solo podrá reactivarse manualmente.")) {
-                        await cambiarEstadoCuenta(usuarioSeleccionado.id, 'baneado');
-                        setUsuarioSeleccionado(null);
-                      }
+                    onClick={() => {
+                      setConfirmConfig({
+                        titulo: "Banear Permanente",
+                        mensaje: `¿Banear permanentemente a ${usuarioSeleccionado.nombre_completo}? Solo podrá reactivarse manualmente por un Super Administrador.`,
+                        tipo: "danger",
+                        alConfirmar: async () => {
+                          await cambiarEstadoCuenta(usuarioSeleccionado.id, 'baneado');
+                          setUsuarioSeleccionado(null);
+                        }
+                      });
                     }}
                     style={{ flex: 1, background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
                   >
@@ -845,11 +951,16 @@ export default function SuperAdminDashboardView() {
                 )}
                 {usuarioSeleccionado.estado_cuenta !== 'activo' && (
                   <button
-                    onClick={async () => {
-                      if (window.confirm("¿Reactivar la cuenta del ciudadano ahora mismo?")) {
-                        await cambiarEstadoCuenta(usuarioSeleccionado.id, 'activo');
-                        setUsuarioSeleccionado(null);
-                      }
+                    onClick={() => {
+                      setConfirmConfig({
+                        titulo: "Reactivar Cuenta",
+                        mensaje: `¿Reactivar la cuenta de ${usuarioSeleccionado.nombre_completo} ahora mismo?`,
+                        tipo: "success",
+                        alConfirmar: async () => {
+                          await cambiarEstadoCuenta(usuarioSeleccionado.id, 'activo');
+                          setUsuarioSeleccionado(null);
+                        }
+                      });
                     }}
                     style={{ flex: 1, background: '#dcfce7', color: '#15803d', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
                   >
@@ -882,6 +993,53 @@ export default function SuperAdminDashboardView() {
             >
               Cerrar y Continuar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación Personalizado */}
+      {confirmConfig && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem', backdropFilter: 'blur(8px)' }}>
+          <div style={{ background: '#fff', padding: '2rem', borderRadius: '24px', maxWidth: '440px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0,
+                background: confirmConfig.tipo === 'danger' ? '#fef2f2' : confirmConfig.tipo === 'warning' ? '#fff7ed' : '#f0fdf4',
+                color: confirmConfig.tipo === 'danger' ? '#ef4444' : confirmConfig.tipo === 'warning' ? '#f97316' : '#16a34a'
+              }}>
+                {confirmConfig.tipo === 'danger' ? '🚨' : confirmConfig.tipo === 'warning' ? '⚠️' : '❓'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: '0 0 6px', color: '#0f172a', fontSize: '1.2rem', fontWeight: '800' }}>
+                  {confirmConfig.titulo}
+                </h3>
+                <p style={{ margin: 0, color: '#475569', fontSize: '0.925rem', lineHeight: 1.5 }}>
+                  {confirmConfig.mensaje}
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setConfirmConfig(null)}
+                style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '10px 18px', borderRadius: '10px', fontWeight: '700', fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  const action = confirmConfig.alConfirmar;
+                  setConfirmConfig(null);
+                  await action();
+                }}
+                style={{
+                  background: confirmConfig.tipo === 'danger' ? '#ef4444' : confirmConfig.tipo === 'warning' ? '#f97316' : '#2563eb',
+                  color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '10px', fontWeight: '700', fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s',
+                  boxShadow: confirmConfig.tipo === 'danger' ? '0 4px 6px rgba(239,68,68,0.2)' : confirmConfig.tipo === 'warning' ? '0 4px 6px rgba(249,115,22,0.2)' : '0 4px 6px rgba(37,99,235,0.2)'
+                }}
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}

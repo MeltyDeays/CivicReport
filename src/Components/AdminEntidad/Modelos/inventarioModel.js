@@ -2,21 +2,21 @@ import { supabase } from "../../../core/supabaseClient";
 
 export const inventarioAdminEntidadModel = {
   async listarMateriales() {
-    return await supabase.from("materiales").select("id,nombre,unidad_medida").order("nombre");
+    return await supabase.from("materiales").select("id,nombre,unidad_medida,categoria").order("categoria").order("nombre");
   },
 
-  async crearMaterial({ nombre, unidad_medida }) {
+  async crearMaterial({ nombre, unidad_medida, categoria }) {
     return await supabase
       .from("materiales")
-      .insert([{ nombre, unidad_medida: unidad_medida || "unidad" }])
-      .select("id,nombre,unidad_medida")
+      .insert([{ nombre, unidad_medida: unidad_medida || "unidad", categoria: categoria || "General" }])
+      .select("id,nombre,unidad_medida,categoria")
       .single();
   },
 
   async listarInventario(entidadId) {
     return await supabase
       .from("inventario_entidad")
-      .select("entidad_id,material_id,cantidad,stock_minimo,actualizado_el,materiales(id,nombre,unidad_medida)")
+      .select("entidad_id,material_id,cantidad,stock_minimo,actualizado_el,materiales(id,nombre,unidad_medida,categoria)")
       .eq("entidad_id", entidadId)
       .order("actualizado_el", { ascending: false });
   },

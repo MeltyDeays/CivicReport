@@ -30,9 +30,14 @@ export function useNotificaciones() {
   }, [userId]);
 
   useEffect(() => {
-    cargarDatos();
+    const timer = setTimeout(() => {
+      cargarDatos();
+    }, 0);
     const interval = setInterval(cargarDatos, 30000); // Polling 30s
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [cargarDatos]);
 
   const handleMarcarLeida = async (id) => {

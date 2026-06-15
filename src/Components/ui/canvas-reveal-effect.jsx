@@ -120,7 +120,7 @@ const DotMatrix = ({
   );
 };
 
-const ShaderMaterial = ({ source, uniforms, maxFps = 60 }) => {
+const ShaderMaterial = ({ source, uniforms }) => {
   const { size } = useThree();
   const ref = useRef(null);
 
@@ -130,7 +130,7 @@ const ShaderMaterial = ({ source, uniforms, maxFps = 60 }) => {
     material.uniforms.u_time.value = clock.getElapsedTime();
   });
 
-  const getUniforms = () => {
+  const material = useMemo(() => {
     const prepared = {};
     for (const name in uniforms) {
       const u = uniforms[name];
@@ -145,10 +145,7 @@ const ShaderMaterial = ({ source, uniforms, maxFps = 60 }) => {
     }
     prepared["u_time"] = { value: 0, type: "1f" };
     prepared["u_resolution"] = { value: new THREE.Vector2(size.width * 2, size.height * 2) };
-    return prepared;
-  };
 
-  const material = useMemo(() => {
     return new THREE.ShaderMaterial({
       vertexShader: `
         precision mediump float;
@@ -164,13 +161,13 @@ const ShaderMaterial = ({ source, uniforms, maxFps = 60 }) => {
         }
       `,
       fragmentShader: source,
-      uniforms: getUniforms(),
+      uniforms: prepared,
       glslVersion: THREE.GLSL3,
       blending: THREE.CustomBlending,
       blendSrc: THREE.SrcAlphaFactor,
       blendDst: THREE.OneFactor,
     });
-  }, [size.width, size.height, source]);
+  }, [size.width, size.height, source, uniforms]);
 
   return (
     <mesh ref={ref}>
@@ -187,3 +184,6 @@ const Shader = ({ source, uniforms, maxFps = 60 }) => {
     </Canvas>
   );
 };
+
+export default CanvasRevealEffect;
+

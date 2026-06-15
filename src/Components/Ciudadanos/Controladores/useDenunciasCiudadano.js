@@ -12,7 +12,10 @@ export function useDenunciasCiudadano() {
   }, []);
 
   useEffect(() => {
-    cargarReportes();
+    const timer = setTimeout(() => {
+      cargarReportes();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [cargarReportes]);
 
   const crear = useCallback(async (payload) => {

@@ -113,16 +113,24 @@ export default function VistaPerfil() {
         }} />
 
         <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "center", gap: 24 }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: 20,
-            background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 28, fontWeight: 900, color: "#fff",
-            boxShadow: "0 8px 24px rgba(37,99,235,0.35)",
-            flexShrink: 0
-          }}>
-            {iniciales}
-          </div>
+          {perfil?.foto_selfie_url ? (
+            <img src={perfil.foto_selfie_url} alt={perfil.nombre_completo}
+              style={{
+                width: 80, height: 80, borderRadius: 20, objectFit: "cover",
+                boxShadow: "0 8px 24px rgba(37,99,235,0.35)", flexShrink: 0
+              }}
+            />
+          ) : (
+            <div style={{
+              width: 80, height: 80, borderRadius: 20,
+              background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 28, fontWeight: 900, color: "#fff",
+              boxShadow: "0 8px 24px rgba(37,99,235,0.35)", flexShrink: 0
+            }}>
+              {iniciales}
+            </div>
+          )}
           <div style={{ flex: 1, minWidth: 0 }}>
             {editando ? (
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

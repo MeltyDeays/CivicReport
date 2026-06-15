@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useReportesAdminEntidad } from "../Controladores/useReportesAdminEntidad";
 import { supabase } from "../../../core/supabaseClient";
-import { formatearFecha } from "../../../utils/formatters";
 import { useNotificaciones } from "../Controladores/useNotificaciones";
 import { useAuth } from "../../../modules/auth/controllers/useAuth.jsx";
 import { generarReporteEjecutivoSemanal } from "../../../services/iaService";

@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 
 export default function CiudadanoSugerenciasView() {
-  const { items, meta, crear } = useSugerenciasCiudadano();
+  const { items, crear } = useSugerenciasCiudadano();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [filtroDep, setFiltroDep] = useState("todos");

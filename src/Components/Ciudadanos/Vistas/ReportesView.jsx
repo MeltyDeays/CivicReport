@@ -9,7 +9,7 @@ import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 
 export default function CiudadanoReportesView() {
   const { vincularCodigoTecnico, sesion } = useAuth();
-  const { reportes, meta, crear, actualizar, eliminar, actualizarFirmaLocal } = useDenunciasCiudadano();
+  const { reportes, crear, actualizar, eliminar, actualizarFirmaLocal } = useDenunciasCiudadano();
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroDep, setFiltroDep] = useState("todos");
@@ -23,6 +23,7 @@ export default function CiudadanoReportesView() {
   const [denunciaPago, setDenunciaPago] = useState(null);
 
   const reportesFiltrados = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
     const ahora = Date.now();
     const OCHO_HORAS_MS = 8 * 60 * 60 * 1000;
 

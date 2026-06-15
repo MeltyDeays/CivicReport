@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, lazy, Suspense } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { CanvasRevealEffect } from "../Components/ui/canvas-reveal-effect";
+
+const CanvasRevealEffect = lazy(() => import("../Components/ui/canvas-reveal-effect"));
 
 export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alIrRegistro }) {
   const [email, setEmail] = useState("");
@@ -33,28 +35,20 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
   return (
     <div className="sif-root">
       <div className="sif-bg">
-        {initialCanvasVisible && (
-          <div className="sif-canvas-layer">
-            <CanvasRevealEffect
-              animationSpeed={3}
-              containerClassName="sif-canvas-bg"
-              colors={[[255, 255, 255], [255, 255, 255]]}
-              dotSize={6}
-              reverse={false}
-            />
-          </div>
-        )}
-        {reverseCanvasVisible && (
-          <div className="sif-canvas-layer">
-            <CanvasRevealEffect
-              animationSpeed={4}
-              containerClassName="sif-canvas-bg"
-              colors={[[255, 255, 255], [255, 255, 255]]}
-              dotSize={6}
-              reverse={true}
-            />
-          </div>
-        )}
+        <Suspense fallback={<div className="sif-canvas-bg" />}>
+          {(initialCanvasVisible || reverseCanvasVisible) && (
+            <div className="sif-canvas-layer">
+              <CanvasRevealEffect
+                key={reverseCanvasVisible ? "outro" : "intro"}
+                animationSpeed={reverseCanvasVisible ? 4 : 3}
+                containerClassName="sif-canvas-bg"
+                colors={[[255, 255, 255], [255, 255, 255]]}
+                dotSize={6}
+                reverse={reverseCanvasVisible}
+              />
+            </div>
+          )}
+        </Suspense>
         <div className="sif-radial-overlay" />
         <div className="sif-top-gradient" />
       </div>
@@ -120,6 +114,8 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
                       <div className="sif-input-wrap">
                         <input
                           type="email"
+                          id="email"
+                          name="email"
                           placeholder="correo@ejemplo.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -132,6 +128,8 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
                       <div className="sif-input-wrap" style={{ marginTop: "12px" }}>
                         <input
                           type="password"
+                          id="password"
+                          name="password"
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}

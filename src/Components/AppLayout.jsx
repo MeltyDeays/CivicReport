@@ -18,7 +18,7 @@ const enlacesSuperAdmin = [{ to: "/super/dashboard", label: "Dashboard", icon: "
 
 
 
-export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrarSesion, sesion, perfil }) {
+export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrarSesion, perfil }) {
   const [cerrando, setCerrando] = useState(false);
   const [esEncargado, setEsEncargado] = useState(false);
   const location = useLocation();

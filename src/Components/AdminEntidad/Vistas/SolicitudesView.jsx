@@ -8,8 +8,10 @@ export default function SolicitudesView() {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState("");
 
+  const entidadId = perfil?.id_entidad;
+
   const cargar = useCallback(async () => {
-    if (!perfil?.id_entidad) return;
+    if (!entidadId) return;
     setCargando(true);
 
     const { data } = await supabase
@@ -21,14 +23,19 @@ export default function SolicitudesView() {
         denuncias!inner(id,titulo,municipio,entidad_id)
       `)
       .eq("estado_solicitud", "pendiente_revision")
-      .eq("denuncias.entidad_id", perfil.id_entidad)
+      .eq("denuncias.entidad_id", entidadId)
       .order("creado_el", { ascending: false });
 
     setSolicitudes(data || []);
     setCargando(false);
-  }, [perfil?.id_entidad]);
+  }, [entidadId]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cargar();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [cargar]);
 
   const decidir = async (solicitudId, decision) => {
     setProcesando(solicitudId);

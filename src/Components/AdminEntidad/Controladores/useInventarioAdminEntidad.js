@@ -33,8 +33,8 @@ export function useInventarioAdminEntidad(entidadId) {
     recargar();
   }, [recargar]);
 
-  const crearMaterial = useCallback(async ({ nombre, unidad_medida }) => {
-    const res = await inventarioAdminEntidadModel.crearMaterial({ nombre, unidad_medida });
+  const crearMaterial = useCallback(async ({ nombre, unidad_medida, categoria }) => {
+    const res = await inventarioAdminEntidadModel.crearMaterial({ nombre, unidad_medida, categoria });
     if (res.error) throw new Error(res.error.message);
     setMateriales((prev) => [res.data, ...prev].sort((a, b) => a.nombre.localeCompare(b.nombre)));
     return res.data;

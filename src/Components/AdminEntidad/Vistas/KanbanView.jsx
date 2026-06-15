@@ -42,7 +42,6 @@ export default function AdminEntidadKanbanView() {
   }, [vm.tareasActivas]);
 
   const totalActivas = vm.tareasActivas.length;
-  const countByCol = agrupado.map(c => c.items.length);
 
   return (
     <section style={{ padding: '28px 32px', background: '#f1f5f9', minHeight: '100%' }}>
@@ -434,7 +433,6 @@ export default function AdminEntidadKanbanView() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {vm.historial.map((item) => {
-                    const prio = PRIORIDAD_ESTILOS[item.prioridad] || PRIORIDAD_ESTILOS.media;
                     return (
                       <article key={item.id} style={{
                         background: '#fff', borderRadius: '12px', padding: '14px 16px',
@@ -473,8 +471,11 @@ function ModalAsignacion({ vm }) {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    setResponsable(vm.detalleAsignacion.id_responsable || "");
-    setCuadrilla(vm.detalleAsignacion.id_cuadrilla_asignada || "");
+    const timer = setTimeout(() => {
+      setResponsable(vm.detalleAsignacion.id_responsable || "");
+      setCuadrilla(vm.detalleAsignacion.id_cuadrilla_asignada || "");
+    }, 0);
+    return () => clearTimeout(timer);
   }, [vm.detalleAsignacion]);
 
   const guardar = async () => {

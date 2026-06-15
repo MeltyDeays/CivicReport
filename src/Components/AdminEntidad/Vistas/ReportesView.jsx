@@ -321,16 +321,27 @@ export default function AdminEntidadReportesView() {
 
                     {/* Action buttons */}
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => setDenunciaFalsa(item)}
-                        style={{
+                      {item.es_falso_reporte ? (
+                        <span style={{
                           padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
-                          fontWeight: '700', cursor: 'pointer', border: '1px solid #fee2e2',
-                          background: '#fef2f2', color: '#ef4444', transition: 'all 0.2s'
-                        }}
-                      >
-                        ⚠️ Reportar Falso
-                      </button>
+                          fontWeight: '700', border: '1px solid #cbd5e1',
+                          background: '#f1f5f9', color: '#64748b', display: 'inline-flex',
+                          alignItems: 'center', gap: '6px'
+                        }}>
+                          ⚠️ Reportado
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setDenunciaFalsa(item)}
+                          style={{
+                            padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
+                            fontWeight: '700', cursor: 'pointer', border: '1px solid #fee2e2',
+                            background: '#fef2f2', color: '#ef4444', transition: 'all 0.2s'
+                          }}
+                        >
+                          ⚠️ Reportar Falso
+                        </button>
+                      )}
                       <button
                         onClick={() => manejarAlternarVisibilidad(item)}
                         style={{
