@@ -1,8 +1,29 @@
-import { useState, useRef } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { CanvasRevealEffect } from "../Components/ui/canvas-reveal-effect";
-import { llamarValidacionIdentidad } from "../services/iaClient";
-import { uploadFile } from "../services/storageService";
+
+const CanvasRevealEffect = lazy(() => import("../Components/ui/canvas-reveal-effect"));
+import { verificarIdentidadBiometrica } from "../services/biometricClient";
+import BiometricIdentitySection from "../modules/auth/components/BiometricIdentitySection";
+const CODIGOS_MUNICIPIOS_NICARAGUA = new Set([
+  "001", "002", "003", "004", "005", "006", "007", "008", "009",
+  "041", "042", "043", "044", "045", "046", "047", "048",
+  "049", "050", "051", "052", "053", "054",
+  "081", "082", "083", "084", "085", "086", "087", "088", "089", "090", "091", "092", "093",
+  "121", "122", "123", "124", "125", "126", "127", "128", "129", "130",
+  "161", "162", "163", "164",
+  "201", "202", "203", "204", "205", "206",
+  "241", "242", "243", "244", "245", "246", "247", "248",
+  "281", "282", "283", "284", "285", "286", "287", "288", "289", "290",
+  "361", "362", "363", "364", "365", "366", "367", "368", "369",
+  "401", "402", "403", "404", "405", "406", "407", "408", "409",
+  "441", "442", "443", "444", "445", "446", "447", "448", "449", "450", "451", "452", "453",
+  "481", "482", "483", "484", "485", "486", "487", "488", "489", "490", "491", "492",
+  "521", "522", "523", "524", "525", "526",
+  "561", "562", "563", "564", "565", "566", "567", "568", "569", "570",
+  "601", "602", "603", "604", "605", "606", "607", "608",
+  "616", "617", "618", "619", "620", "621", "622", "623", "624", "625", "626"
+]);
 
 export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstitucional, alRegistroTecnico, alIrLogin }) {
   const [tab, setTab] = useState("ciudadano");
@@ -33,33 +54,82 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
   const [validandoIdentidad, setValidandoIdentidad] = useState(false);
   const [mensajeValidacion, setMensajeValidacion] = useState("");
 
-  const selfieInputRef = useRef(null);
+  const [selfieCapturada, setSelfieCapturada] = useState(false);
+
   const frenteInputRef = useRef(null);
   const atrasInputRef = useRef(null);
 
   const convertirABase64 = (file) => {
+    console.log("convertirABase64 - Procesando archivo:", { nombre: file.name, tipo: file.type, tamaño: file.size });
     return new Promise((resolve, reject) => {
+      if (!file.type.startsWith("image/")) {
+        console.warn("convertirABase64 - Omitiendo compresión, tipo no es imagen:", file.type);
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const base64Str = reader.result.split(',')[1];
+          resolve(base64Str);
+        };
+        reader.onerror = error => reject(error);
+        return;
+      }
+
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64Str = reader.result.split(',')[1];
-        resolve(base64Str);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          console.log("convertirABase64 - Imagen cargada en Image():", { width: img.width, height: img.height });
+          const canvas = document.createElement("canvas");
+          const maxDimension = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          const base64Str = dataUrl.split(",")[1];
+          console.log("convertirABase64 - Compresión exitosa. Base64 largo:", base64Str.length);
+          resolve(base64Str);
+        };
+        img.onerror = (e) => {
+          console.warn("convertirABase64 - Falló carga de imagen en Image. Fallback sin compresión. Evento:", e);
+          const fbReader = new FileReader();
+          fbReader.readAsDataURL(file);
+          fbReader.onload = () => {
+            const base64Str = fbReader.result.split(',')[1];
+            resolve(base64Str);
+          };
+          fbReader.onerror = error => reject(error);
+        };
+        img.src = event.target.result;
       };
       reader.onerror = error => reject(error);
     });
   };
 
-  const manejarSelfie = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const manejarCapturaSelfie = (blob, base64) => {
+    const file = new File([blob], "selfie-camara.jpg", { type: "image/jpeg" });
     setSelfie(file);
-    setSelfieUrl(URL.createObjectURL(file));
-    try {
-      const b64 = await convertirABase64(file);
-      setSelfieBase64(b64);
-    } catch (err) {
-      console.error(err);
-    }
+    setSelfieUrl(URL.createObjectURL(blob));
+    setSelfieBase64(base64);
+    setSelfieCapturada(true);
   };
 
   const manejarCedulaFrente = async (e) => {
@@ -111,7 +181,7 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
     const tieneMayuscula = /[A-Z]/.test(password);
     const tieneMinuscula = /[a-z]/.test(password);
     const tieneNumero = /\d/.test(password);
-    const tieneSimbolo = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?#*]/.test(password);
+    const tieneSimbolo = new RegExp('[!@#$%^&*()_+\\-=\\[\\]{};\':"\\\\|,.<>/?#*]').test(password);
 
     if (!tieneMayuscula || !tieneMinuscula) {
       setError("La contraseña debe contener letras mayúsculas y minúsculas.");
@@ -128,16 +198,27 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
 
     setEnviando(true);
     try {
-      let fotoSelfieUrl = null;
-      let fotoCedulaFrenteUrl = null;
-      let fotoCedulaAtrasUrl = null;
       let verificadoIa = false;
       let motivoRechazoIa = null;
 
       if (tab !== "institucional") {
-        const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
+        const regexCedula = /^(\d{3})-(\d{6})-(\d{4})([A-Z])$/;
         if (!cedula || !regexCedula.test(cedula)) {
           throw new Error("Ingresa una cédula nicaragüense válida (ej. 121-041204-1006N).");
+        }
+
+        const matches = cedula.match(regexCedula);
+        const municipioCod = matches[1];
+        const fechaCod = matches[2];
+
+        if (!CODIGOS_MUNICIPIOS_NICARAGUA.has(municipioCod)) {
+          throw new Error(`Código de municipio '${municipioCod}' no válido en la cédula de Nicaragua.`);
+        }
+
+        const dia = parseInt(fechaCod.slice(0, 2), 10);
+        const mes = parseInt(fechaCod.slice(2, 4), 10);
+        if (mes < 1 || mes > 12 || dia < 1 || dia > 31) {
+          throw new Error("La fecha de nacimiento en el formato de la cédula no es válida.");
         }
 
         const partesNombre = nombreCompleto.trim().split(/\s+/);
@@ -146,17 +227,27 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
         }
 
         if (!selfie || !cedulaFrente || !cedulaAtras) {
-          throw new Error("Por seguridad y para evitar spam, debes proporcionar tu selfie y fotos de la cédula (frente y atrás) para validar tu identidad.");
+          throw new Error("Por seguridad, debes capturar tu selfie en vivo y subir fotos de la cédula (frente y atrás) para validar tu identidad.");
+        }
+
+        if (!selfieCapturada || !selfieBase64) {
+          throw new Error("Completa la prueba de vitalidad: parpadea frente a la cámara para capturar tu selfie.");
+        }
+
+        if (selfieBase64 === cedulaFrenteBase64 || cedulaFrenteBase64 === cedulaAtrasBase64 || selfieBase64 === cedulaAtrasBase64) {
+          throw new Error("No puedes subir la misma imagen en campos diferentes. Por favor proporciona fotos distintas para la selfie, frente de la cédula y atrás de la cédula.");
         }
 
         setValidandoIdentidad(true);
-        setMensajeValidacion("Escaneando facciones y contrastando cédula con IA biométrica de Groq...");
+        setMensajeValidacion("Validando vitalidad y autenticidad facial con el servidor biométrico...");
 
-        const resultado = await llamarValidacionIdentidad({
+        const resultado = await verificarIdentidadBiometrica({
           selfieBase64,
           cedulaFrenteBase64,
           cedulaAtrasBase64,
-          cedulaEscrita: cedula
+          cedulaEscrita: cedula,
+          nombreEscrito: nombreCompleto,
+          livenessClient: true,
         });
 
         if (!resultado.valido) {
@@ -165,12 +256,7 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
 
         verificadoIa = true;
         motivoRechazoIa = resultado.motivo;
-        setMensajeValidacion("Subiendo fotos de verificación a base de datos segura...");
-
-        // Subir a Supabase Storage
-        fotoSelfieUrl = await uploadFile("identidades", selfie, "selfies");
-        fotoCedulaFrenteUrl = await uploadFile("identidades", cedulaFrente, "cedulas_frente");
-        fotoCedulaAtrasUrl = await uploadFile("identidades", cedulaAtras, "cedulas_atras");
+        setMensajeValidacion("Registrando usuario y subiendo fotos de verificación...");
       }
 
       if (tab === "ciudadano") {
@@ -179,13 +265,13 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
           password,
           cedula,
           nombreCompleto,
-          foto_selfie_url: fotoSelfieUrl,
-          foto_cedula_frente_url: fotoCedulaFrenteUrl,
-          foto_cedula_atras_url: fotoCedulaAtrasUrl,
+          selfieFile: selfie,
+          cedulaFrenteFile: cedulaFrente,
+          cedulaAtrasFile: cedulaAtras,
           verificado_ia: verificadoIa,
           motivo_rechazo_ia: motivoRechazoIa
         });
-        setExito("¡Registro exitoso! Revisa tu correo para confirmar tu cuenta. Redirigiendo...");
+        setExito("¡Cuenta creada exitosamente! Ahora inicia sesión con tus credenciales. Redirigiendo al login...");
       } else if (tab === "institucional") {
         if (!codigoInvitacion.trim()) throw new Error("Ingresa el código de invitación.");
         await alRegistroInstitucional({ email, password, nombreCompleto, cedula, codigoInvitacion: codigoInvitacion.trim() });
@@ -198,9 +284,9 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
           nombreCompleto,
           cedula,
           codigoInvitacion: codigoInvitacion.trim(),
-          foto_selfie_url: fotoSelfieUrl,
-          foto_cedula_frente_url: fotoCedulaFrenteUrl,
-          foto_cedula_atras_url: fotoCedulaAtrasUrl,
+          selfieFile: selfie,
+          cedulaFrenteFile: cedulaFrente,
+          cedulaAtrasFile: cedulaAtras,
           verificado_ia: verificadoIa,
           motivo_rechazo_ia: motivoRechazoIa
         });
@@ -239,28 +325,20 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
   return (
     <div className="sif-root">
       <div className="sif-bg">
-        {initialCanvasVisible && (
-          <div className="sif-canvas-layer">
-            <CanvasRevealEffect
-              animationSpeed={3}
-              containerClassName="sif-canvas-bg"
-              colors={[[255, 255, 255], [255, 255, 255]]}
-              dotSize={6}
-              reverse={false}
-            />
-          </div>
-        )}
-        {reverseCanvasVisible && (
-          <div className="sif-canvas-layer">
-            <CanvasRevealEffect
-              animationSpeed={4}
-              containerClassName="sif-canvas-bg"
-              colors={[[255, 255, 255], [255, 255, 255]]}
-              dotSize={6}
-              reverse={true}
-            />
-          </div>
-        )}
+        <Suspense fallback={<div className="sif-canvas-bg" />}>
+          {(initialCanvasVisible || reverseCanvasVisible) && (
+            <div className="sif-canvas-layer">
+              <CanvasRevealEffect
+                key={reverseCanvasVisible ? "outro" : "intro"}
+                animationSpeed={reverseCanvasVisible ? 4 : 3}
+                containerClassName="sif-canvas-bg"
+                colors={[[255, 255, 255], [255, 255, 255]]}
+                dotSize={6}
+                reverse={reverseCanvasVisible}
+              />
+            </div>
+          )}
+        </Suspense>
         <div className="sif-radial-overlay" />
         <div className="sif-top-gradient" />
       </div>
@@ -330,26 +408,27 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                   transition={{ duration: 0.4, ease: "easeOut" }}
                   className="sif-step-content"
                 >
-                  <div className="sif-step-header">
-                    <h1 className="sif-title">Únete a CivicReports</h1>
-                    <p className="sif-subtitle" style={{ fontSize: "1.1rem" }}>Selecciona tu tipo de cuenta</p>
+                  <div className="reg-page-header">
+                    <div className="sif-step-header reg-page-header__text">
+                      <h1 className="sif-title">Únete a CivicReports</h1>
+                      <p className="sif-subtitle">Selecciona tu tipo de cuenta</p>
+                    </div>
+                    <div className="reg-tabs">
+                      {tabs.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className={`reg-tab ${tab === t.id ? "reg-tab-active" : ""}`}
+                          onClick={() => { setTab(t.id); setError(""); }}
+                        >
+                          <span className="reg-tab-icon">{t.icon}</span>
+                          <span className="reg-tab-label">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="reg-tabs">
-                    {tabs.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        className={`reg-tab ${tab === t.id ? "reg-tab-active" : ""}`}
-                        onClick={() => { setTab(t.id); setError(""); }}
-                      >
-                        <span className="reg-tab-icon">{t.icon}</span>
-                        <span className="reg-tab-label">{t.label}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <form onSubmit={manejarEnvio} className="reg-form" style={{ position: "relative" }}>
+                  <form onSubmit={manejarEnvio} className={`reg-form ${tab === "institucional" ? "reg-form--single" : ""}`} style={{ position: "relative" }}>
                     {validandoIdentidad && (
                       <motion.div 
                         initial={{ opacity: 0 }} 
@@ -377,139 +456,98 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                       </motion.div>
                     )}
 
-                    {tab !== "institucional" && (
-                      <>
-                        <div className="reg-input-group">
-                          <label className="reg-label" htmlFor="nombreCompleto">Nombre Completo</label>
-                          <input type="text" id="nombreCompleto" name="nombreCompleto" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required={tab !== "institucional"} placeholder="Ej. María López" className="reg-input" />
-                        </div>
-                        <div className="reg-input-group">
-                          <label className="reg-label" htmlFor="cedula">Cédula de Identidad</label>
-                          <input type="text" id="cedula" name="cedula" value={cedula} onChange={(e) => setCedula(formatearCedula(e.target.value))} required={tab !== "institucional"} placeholder="000-000000-0000X" maxLength={16} className="reg-input reg-input-mono" />
-                        </div>
-
-                        <div className="reg-biometrics-container" style={{ margin: "1.5rem 0", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                          <h4 style={{ color: "#fff", fontSize: "0.95rem", fontWeight: "700", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px", marginBottom: "8px" }}>
-                            🔍 Validación Biométrica de Identidad
-                          </h4>
-                          
-                          <div className="reg-input-group" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                            <label className="reg-label" htmlFor="selfieInput" style={{ alignSelf: "flex-start" }}>Foto de Perfil (Selfie) *</label>
-                            <div 
-                              onClick={() => selfieInputRef.current.click()}
-                              style={{
-                                width: "110px", height: "110px", borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "2px dashed rgba(255,255,255,0.2)",
-                                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", position: "relative",
-                                transition: "all 0.3s"
-                              }}
-                            >
-                              {selfieUrl ? (
-                                <img src={selfieUrl} alt="Selfie" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              ) : (
-                                <>
-                                  <span style={{ fontSize: "2rem" }}>📸</span>
-                                  <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.6)", textAlign: "center", padding: "0 8px" }}>Tómate una foto</span>
-                                </>
-                              )}
-                              <input type="file" accept="image/*" id="selfieInput" name="selfieInput" ref={selfieInputRef} onChange={manejarSelfie} style={{ display: "none" }} />
+                    <div className="reg-form-layout">
+                      <div className="reg-form-col reg-form-col--fields">
+                        {tab !== "institucional" && (
+                          <div className="reg-row">
+                            <div className="reg-input-group" style={{ flex: 1.2 }}>
+                              <label className="reg-label" htmlFor="nombreCompleto">Nombre Completo</label>
+                              <input type="text" id="nombreCompleto" name="nombreCompleto" autoComplete="name" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required placeholder="Ej. María López" className="reg-input" />
+                            </div>
+                            <div className="reg-input-group" style={{ flex: 1 }}>
+                              <label className="reg-label" htmlFor="cedula">Cédula de Identidad</label>
+                              <input type="text" id="cedula" name="cedula" autoComplete="off" value={cedula} onChange={(e) => setCedula(formatearCedula(e.target.value))} required placeholder="000-000000-0000X" maxLength={16} className="reg-input reg-input-mono" />
                             </div>
                           </div>
+                        )}
 
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                            <div className="reg-input-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                              <label className="reg-label" htmlFor="frenteInput">Cédula (Frente) *</label>
-                              <div 
-                                onClick={() => frenteInputRef.current.click()}
-                                style={{
-                                  height: "90px", borderRadius: "14px", background: "rgba(255,255,255,0.05)", border: "2px dashed rgba(255,255,255,0.2)",
-                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", position: "relative",
-                                  transition: "all 0.3s"
-                                }}
-                              >
-                                {cedulaFrenteUrl ? (
-                                  <img src={cedulaFrenteUrl} alt="Cédula Frente" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                ) : (
-                                  <>
-                                    <span style={{ fontSize: "1.5rem" }}>🪪</span>
-                                    <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)" }}>Lado Frontal</span>
-                                  </>
-                                )}
-                                <input type="file" accept="image/*" id="frenteInput" name="frenteInput" ref={frenteInputRef} onChange={manejarCedulaFrente} style={{ display: "none" }} />
-                              </div>
+                        {(tab === "institucional" || tab === "tecnico") && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            className="reg-input-group"
+                          >
+                            <label className="reg-label" htmlFor="codigoInvitacion">Código de {tab === "tecnico" ? "Acceso" : "Invitación"}</label>
+                            <input type="text" id="codigoInvitacion" name="codigoInvitacion" autoComplete="off" value={codigoInvitacion} onChange={(e) => setCodigoInvitacion(e.target.value.toUpperCase())} required placeholder="Ej. ENACAL-2026" className="reg-input reg-input-code" />
+                            <span className="reg-hint">
+                              {tab === "tecnico" ? "Solicita este código a tu líder de cuadrilla." : "Código oficial asignado por el sistema."}
+                            </span>
+                          </motion.div>
+                        )}
+
+                        {tab === "institucional" && (
+                          <div className="reg-row">
+                            <div className="reg-input-group" style={{ flex: 1 }}>
+                              <label className="reg-label" htmlFor="nombreCompleto">Nombre Completo</label>
+                              <input type="text" id="nombreCompleto" name="nombreCompleto" autoComplete="name" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required placeholder="Ej. María López" className="reg-input" />
                             </div>
-
-                            <div className="reg-input-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                              <label className="reg-label" htmlFor="atrasInput">Cédula (Atrás) *</label>
-                              <div 
-                                onClick={() => atrasInputRef.current.click()}
-                                style={{
-                                  height: "90px", borderRadius: "14px", background: "rgba(255,255,255,0.05)", border: "2px dashed rgba(255,255,255,0.2)",
-                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", position: "relative",
-                                  transition: "all 0.3s"
-                                }}
-                              >
-                                {cedulaAtrasUrl ? (
-                                  <img src={cedulaAtrasUrl} alt="Cédula Atrás" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                ) : (
-                                  <>
-                                    <span style={{ fontSize: "1.5rem" }}>🪪</span>
-                                    <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)" }}>Lado Trasero</span>
-                                  </>
-                                )}
-                                <input type="file" accept="image/*" id="atrasInput" name="atrasInput" ref={atrasInputRef} onChange={manejarCedulaAtras} style={{ display: "none" }} />
-                              </div>
+                            <div className="reg-input-group" style={{ flex: 1 }}>
+                              <label className="reg-label" htmlFor="cedula">Cédula de Identidad</label>
+                              <input type="text" id="cedula" name="cedula" autoComplete="off" value={cedula} onChange={(e) => setCedula(formatearCedula(e.target.value))} required placeholder="000-000000-0000X" maxLength={16} className="reg-input reg-input-mono" />
                             </div>
                           </div>
+                        )}
+
+                        <div className="reg-input-group">
+                          <label className="reg-label" htmlFor="email">Correo Electrónico</label>
+                          <input type="email" id="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="nombre@ejemplo.com" className="reg-input" />
                         </div>
-                      </>
-                    )}
 
-                    {(tab === "institucional" || tab === "tecnico") && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        className="reg-input-group"
-                      >
-                        <label className="reg-label" htmlFor="codigoInvitacion">Código de {tab === "tecnico" ? "Acceso" : "Invitación"}</label>
-                        <input type="text" id="codigoInvitacion" name="codigoInvitacion" value={codigoInvitacion} onChange={(e) => setCodigoInvitacion(e.target.value.toUpperCase())} required placeholder="Ej. ENACAL-2026" className="reg-input reg-input-code" />
-                        <span className="reg-hint">
-                          {tab === "tecnico" ? "Solicita este código a tu líder de cuadrilla." : "Código oficial asignado por el sistema."}
-                        </span>
-                      </motion.div>
-                    )}
+                        <div className="reg-row">
+                          <div className="reg-input-group" style={{ flex: 1 }}>
+                            <label className="reg-label" htmlFor="password">Contraseña</label>
+                            <input type="password" id="password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Segura (>6 car.)" className="reg-input" />
+                          </div>
+                          <div className="reg-input-group" style={{ flex: 1 }}>
+                            <label className="reg-label" htmlFor="confirmarPassword">Confirmar</label>
+                            <input type="password" id="confirmarPassword" name="confirmarPassword" autoComplete="new-password" value={confirmarPassword} onChange={(e) => setConfirmarPassword(e.target.value)} required placeholder="Repetir" className="reg-input" />
+                          </div>
+                        </div>
 
-                    <div className="reg-input-group">
-                      <label className="reg-label" htmlFor="email">Correo Electrónico</label>
-                      <input type="email" id="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="nombre@ejemplo.com" className="reg-input" />
-                    </div>
+                        {error && (
+                          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="sif-error">
+                            ⚠️ {error}
+                          </motion.div>
+                        )}
 
-                    <div className="reg-row">
-                      <div className="reg-input-group" style={{ flex: 1 }}>
-                        <label className="reg-label" htmlFor="password">Contraseña</label>
-                        <input type="password" id="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Segura (>6 car.)" className="reg-input" />
+                        <div className="reg-form-actions">
+                          <button type="submit" disabled={enviando} className="reg-submit-btn">
+                            {enviando ? "Procesando..." : tab === "ciudadano" ? "Crear Cuenta Ciudadana" : "Registrar Perfil"}
+                          </button>
+                          <button type="button" onClick={alIrLogin} className="reg-login-link">
+                            ¿Ya tienes cuenta? <span className="reg-login-accent">Inicia sesión</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="reg-input-group" style={{ flex: 1 }}>
-                        <label className="reg-label" htmlFor="confirmarPassword">Confirmar</label>
-                        <input type="password" id="confirmarPassword" name="confirmarPassword" value={confirmarPassword} onChange={(e) => setConfirmarPassword(e.target.value)} required placeholder="Repetir" className="reg-input" />
-                      </div>
+
+                      {tab !== "institucional" && (
+                        <div className="reg-form-col reg-form-col--bio">
+                          <BiometricIdentitySection
+                            compact
+                            onSelfieCapture={manejarCapturaSelfie}
+                            selfieDone={selfieCapturada}
+                            frenteInputRef={frenteInputRef}
+                            atrasInputRef={atrasInputRef}
+                            cedulaFrenteUrl={cedulaFrenteUrl}
+                            cedulaAtrasUrl={cedulaAtrasUrl}
+                            onCedulaFrente={manejarCedulaFrente}
+                            onCedulaAtras={manejarCedulaAtras}
+                            disabled={validandoIdentidad || enviando}
+                          />
+                        </div>
+                      )}
                     </div>
-
-                    {error && (
-                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="sif-error">
-                        ⚠️ {error}
-                      </motion.div>
-                    )}
-
-                    <button type="submit" disabled={enviando} className="reg-submit-btn">
-                      {enviando ? "Procesando..." : tab === "ciudadano" ? "Crear Cuenta Ciudadana" : "Registrar Perfil"}
-                    </button>
                   </form>
-
-                  <div className="reg-go-login">
-                    <button type="button" onClick={alIrLogin} className="reg-login-link">
-                      ¿Ya tienes una cuenta? <span className="reg-login-accent">Inicia sesión aquí</span>
-                    </button>
-                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -527,7 +565,10 @@ const REG_STYLES = `
     display: flex;
     width: 100%;
     flex-direction: column;
+    height: 100vh;
     min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
     background: #000;
     position: relative;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -596,24 +637,26 @@ const REG_STYLES = `
     display: flex;
     flex-direction: column;
     flex: 1;
+    height: 100vh;
+    overflow: hidden;
   }
 
   .sif-navbar {
     position: fixed;
-    top: 24px;
+    top: 16px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 20;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 20px;
+    padding: 8px 18px;
     backdrop-filter: blur(12px);
     border-radius: 9999px;
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(10, 10, 10, 0.65);
     width: calc(100% - 2rem);
-    max-width: 500px;
+    max-width: 900px;
   }
 
   .sif-navbar-inner {
@@ -689,30 +732,37 @@ const REG_STYLES = `
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    height: 100%;
+    padding: 72px 1.25rem 1rem;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 
   .sif-step-content {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 12px;
     text-align: center;
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
   }
 
-  .sif-step-header { display: flex; flex-direction: column; gap: 4px; }
+  .sif-step-header { display: flex; flex-direction: column; gap: 2px; }
 
   .sif-title {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    line-height: 1.1;
+    line-height: 1.15;
     letter-spacing: -0.02em;
     color: #fff;
     margin: 0;
   }
 
   .sif-subtitle {
-    font-size: 1.8rem;
-    color: rgba(255,255,255,0.7);
-    font-weight: 300;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 400;
     margin: 0;
   }
 
@@ -746,35 +796,61 @@ const REG_STYLES = `
 
   .reg-form-container {
     width: 100%;
-    max-width: 480px;
-    margin-top: 120px;
-    padding: 0 20px;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .reg-page-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  @media (min-width: 900px) {
+    .reg-page-header {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      gap: 1.5rem;
+    }
+    .reg-page-header__text { text-align: left; }
+    .reg-tabs { flex-shrink: 0; max-width: 380px; }
   }
 
   .reg-tabs {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     background: rgba(0,0,0,0.4);
-    padding: 6px;
-    border-radius: 16px;
+    padding: 4px;
+    border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.05);
+    width: 100%;
   }
 
   .reg-tab {
     flex: 1;
-    padding: 10px 8px;
+    padding: 7px 6px;
     border: none;
-    border-radius: 12px;
-    font-size: 12px;
+    border-radius: 10px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
     color: #94a3b8;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    gap: 5px;
   }
 
   .reg-tab-active {
@@ -783,23 +859,104 @@ const REG_STYLES = `
     box-shadow: 0 4px 12px rgba(255,255,255,0.08);
   }
 
-  .reg-tab-icon { font-size: 16px; }
+  .reg-tab-icon { font-size: 14px; }
   .reg-tab-label { display: block; }
 
   .reg-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
+    text-align: left;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .reg-form-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(340px, 1.2fr);
+    gap: 1rem;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .reg-form--single .reg-form-layout {
+    grid-template-columns: minmax(280px, 480px);
+    justify-content: center;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .reg-form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .reg-form-col--bio {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .reg-form-col--fields {
+    justify-content: center;
+  }
+
+  .reg-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+  }
+
+  .reg-form-actions .reg-submit-btn {
+    flex: 1;
+    margin-top: 0;
+    padding: 11px 16px;
+    font-size: 13px;
+  }
+
+  .reg-form-actions .reg-login-link {
+    flex-shrink: 0;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 899px) {
+    .sif-root {
+      height: auto;
+      max-height: none;
+      overflow: auto;
+    }
+    .sif-content { height: auto; overflow: visible; }
+    .sif-form-area {
+      height: auto;
+      overflow: visible;
+      padding: 88px 1rem 2rem;
+    }
+    .sif-step-content { overflow: visible; max-height: none; }
+    .reg-form-layout {
+      grid-template-columns: 1fr;
+    }
+    .reg-form-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .reg-form-actions .reg-login-link {
+      text-align: center;
+      white-space: normal;
+    }
   }
 
   .reg-input-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
 
   .reg-label {
-    font-size: 12px;
+    font-size: 11px;
     color: #cbd5e1;
     font-weight: 500;
     margin-left: 4px;
@@ -807,12 +964,12 @@ const REG_STYLES = `
 
   .reg-input {
     width: 100%;
-    padding: 12px 16px;
+    padding: 9px 12px;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 12px;
+    border-radius: 10px;
     color: #fff;
-    font-size: 14px;
+    font-size: 13px;
     outline: none;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -842,18 +999,18 @@ const REG_STYLES = `
 
   .reg-row {
     display: flex;
-    gap: 12px;
+    gap: 10px;
   }
 
   .reg-submit-btn {
     width: 100%;
     margin-top: 8px;
-    padding: 14px;
+    padding: 11px;
     border-radius: 9999px;
     border: none;
     background: linear-gradient(to bottom right, #fff, rgba(255,255,255,0.8));
     color: #000;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
@@ -864,23 +1021,27 @@ const REG_STYLES = `
   }
   .reg-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .reg-go-login {
-    margin-top: 28px;
-    text-align: center;
-  }
-
   .reg-login-link {
     background: none;
     border: none;
     color: #94a3b8;
-    font-size: 14px;
+    font-size: 12px;
     cursor: pointer;
     transition: color 0.2s;
+    padding: 0;
   }
   .reg-login-link:hover { color: #fff; }
 
   .reg-login-accent {
     color: #60a5fa;
     font-weight: 600;
+  }
+
+  @media (max-height: 740px) and (min-width: 900px) {
+    .sif-form-area { padding-top: 60px; padding-bottom: 0.5rem; }
+    .sif-title { font-size: 1.25rem; }
+    .reg-form-layout { gap: 0.75rem; }
+    .reg-form-col { gap: 8px; }
+    .bio-section--compact { padding: 0.5rem 0.65rem; }
   }
 `;
