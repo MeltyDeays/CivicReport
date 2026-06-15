@@ -3,9 +3,19 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'GROQ_'],
   plugins: [react()],
   resolve: {
     alias: { '@': '/src' },
+  },
+  server: {
+    proxy: {
+      '/api/biometric': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/biometric/, '/api'),
+      },
+    },
   },
   build: {
     target: 'esnext',

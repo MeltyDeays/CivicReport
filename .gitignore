@@ -26,6 +26,7 @@ dist-ssr
 # Ignore Agent folders
 .agents/
 .trae/
+.cursor/
 
 # Config/Env variables
 .env
@@ -48,3 +49,9 @@ tableau_data/
 datos_tableau_civicreport.csv
 
 scratch/
+
+# Java / Maven local toolchain
+tools/apache-maven-*/
+tools/cuda-deps/
+backend/**/target/
+backend/biometric-service/src/main/resources/models/*.onnx
