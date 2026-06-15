@@ -36,7 +36,7 @@ export const tareasTecnicoModel = {
 
     return await supabase
       .from("denuncias")
-      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,url_imagen,creado_el,actualizado_el,comentario_cierre")
+      .select("id,titulo,descripcion,estado,prioridad,categoria,municipio,departamento,direccion,ubicacion,url_imagen,creado_el,actualizado_el,comentario_cierre")
       .in("id", ids)
       .in("estado", ["completado", "rechazado"])
       .order("actualizado_el", { ascending: false });

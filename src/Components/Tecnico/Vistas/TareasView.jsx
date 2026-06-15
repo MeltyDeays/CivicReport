@@ -79,46 +79,250 @@ export default function TareasView() {
   };
 
   return (
-    <section style={{ padding: '2rem', background: '#f8fafc', minHeight: '100%' }}>
+    <section className="tecnico-container">
+      {/* Inyección de estilos responsivos premium */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .tecnico-container {
+          padding: 2rem;
+          background: #f8fafc;
+          min-height: 100vh;
+          box-sizing: border-box;
+          width: 100%;
+        }
+        .tecnico-header {
+          background: linear-gradient(135deg, #5b1125 0%, #1a0f12 50%, #0c090a 100%); 
+          border-radius: 24px; 
+          padding: 2.5rem; 
+          color: #fff;
+          margin-bottom: 2.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 20px 40px -15px rgba(122, 24, 53, 0.25);
+          box-sizing: border-box;
+          border: 1px solid rgba(194, 159, 104, 0.15);
+        }
+        .tecnico-header-info h1 {
+          margin: 0; 
+          font-size: 2.3rem; 
+          font-weight: 850;
+          letter-spacing: -0.8px;
+          line-height: 1.2;
+          background: linear-gradient(120deg, #ffffff 60%, #f3e8ff 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .tecnico-header-info p {
+          margin: 10px 0 0; 
+          opacity: 0.85; 
+          font-size: 1.05rem;
+          line-height: 1.5;
+          max-width: 600px;
+        }
+        .tecnico-stats-container {
+          display: flex;
+          gap: 1.25rem;
+          flex-shrink: 0;
+        }
+        .tecnico-stat-card {
+          text-align: center;
+          background: rgba(255,255,255,0.05);
+          padding: 1rem 2rem;
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.1);
+          min-width: 90px;
+        }
+        .tecnico-stat-card.urgente {
+          background: rgba(239, 68, 68, 0.12);
+          border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+        .tecnico-stat-card.completada {
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+        .tecnico-stat-card.resolucion {
+          background: rgba(59, 130, 246, 0.12);
+          border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        .tecnico-toggles {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+        .tecnico-toggle-btn {
+          padding: 12px 24px;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 0.95rem;
+          transition: all 0.25s ease;
+        }
+        .tecnico-kanban-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 1.5rem;
+          align-items: start;
+          box-sizing: border-box;
+          width: 100%;
+        }
+        .tecnico-kanban-column {
+          background: #fff; 
+          border-radius: 20px; 
+          overflow: hidden;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+        .tecnico-column-body {
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          min-height: 500px;
+          box-sizing: border-box;
+        }
+        .tecnico-column-header {
+          padding: 14px 18px; 
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .tecnico-card {
+          background: #fff;
+          border-radius: 16px;
+          padding: 1.25rem;
+          border: 1px solid #e2e8f0;
+          transition: all 0.2s ease;
+          cursor: default;
+          box-sizing: border-box;
+        }
+        .tecnico-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+        .tecnico-card.finalizada {
+          background: #f8fafc;
+          opacity: 0.75;
+          cursor: default;
+        }
+        .tecnico-card.finalizada:hover {
+          transform: none;
+          box-shadow: none;
+        }
+        .tecnico-empty-placeholder {
+          text-align: center;
+          padding: 2.5rem 1rem;
+          border: 2px dashed #cbd5e1;
+          border-radius: 16px;
+          color: #94a3b8;
+          font-size: 0.85rem;
+          font-weight: 600;
+          background: #fcfcfc;
+        }
+
+        /* Adaptabilidad Responsiva */
+        @media (max-width: 900px) {
+          .tecnico-header {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 2rem;
+            gap: 1.5rem;
+          }
+          .tecnico-header-info h1 {
+            font-size: 1.85rem;
+            text-align: center;
+          }
+          .tecnico-header-info p {
+            font-size: 0.95rem;
+            text-align: center;
+          }
+          .tecnico-stats-container {
+            justify-content: center;
+            gap: 1rem;
+          }
+          .tecnico-stat-card {
+            padding: 0.85rem 1.5rem;
+            flex: 1;
+            min-width: 0;
+          }
+        }
+        @media (max-width: 600px) {
+          .tecnico-container {
+            padding: 1rem 0.5rem;
+          }
+          .tecnico-header {
+            padding: 1.5rem;
+            border-radius: 18px;
+            margin-bottom: 1.75rem;
+          }
+          .tecnico-header-info h1 {
+            font-size: 1.65rem;
+          }
+          .tecnico-header-info p {
+            font-size: 0.88rem;
+          }
+          .tecnico-toggles {
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+          }
+          .tecnico-toggle-btn {
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            border-radius: 10px;
+          }
+          .tecnico-kanban-grid {
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+          }
+          .tecnico-kanban-column {
+            border-radius: 16px;
+          }
+          .tecnico-card {
+            padding: 1.1rem;
+          }
+          .tecnico-column-body {
+            min-height: auto;
+            padding: 8px;
+          }
+          .tecnico-empty-placeholder {
+            padding: 1.25rem 1rem;
+            font-size: 0.8rem;
+          }
+        }
+      `}} />
+
       {/* Header Premium para Técnico */}
-      <header style={{ 
-        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
-        borderRadius: '24px', 
-        padding: '2.5rem', 
-        color: '#fff',
-        marginBottom: '2.5rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-      }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800' }}>Panel de Operaciones</h1>
-          <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: '1.1rem' }}>Gestiona los reportes asignados a tu cuadrilla y actualiza el progreso en tiempo real.</p>
+      <header className="tecnico-header">
+        <div className="tecnico-header-info">
+          <h1>Panel de Operaciones</h1>
+          <p>Gestiona los reportes asignados a tu cuadrilla y actualiza el progreso en tiempo real.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1.5rem' }}>
+        <div className="tecnico-stats-container">
           {vistaActiva === "kanban" ? (
             <>
-              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem 2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="tecnico-stat-card">
                 <div style={{ fontSize: '1.8rem', fontWeight: '800' }}>{stats.total}</div>
                 <div style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: '600', textTransform: 'uppercase' }}>Tareas</div>
               </div>
-              <div style={{ textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem 2rem', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <div className="tecnico-stat-card urgente">
                 <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#f87171' }}>{stats.urgentes}</div>
                 <div style={{ fontSize: '0.8rem', color: '#f87171', fontWeight: '600', textTransform: 'uppercase' }}>Prioridad</div>
               </div>
             </>
           ) : (
             <>
-              <div style={{ textAlign: 'center', background: 'rgba(16, 185, 129, 0.1)', padding: '1rem 2rem', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+              <div className="tecnico-stat-card completada">
                 <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#34d399' }}>{statsHistorial.completadas}</div>
                 <div style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: '600', textTransform: 'uppercase' }}>Completadas</div>
               </div>
-              <div style={{ textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem 2rem', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <div className="tecnico-stat-card urgente">
                 <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#f87171' }}>{statsHistorial.rechazadas}</div>
                 <div style={{ fontSize: '0.8rem', color: '#f87171', fontWeight: '600', textTransform: 'uppercase' }}>Rechazadas</div>
               </div>
-              <div style={{ textAlign: 'center', background: 'rgba(59, 130, 246, 0.1)', padding: '1rem 2rem', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <div className="tecnico-stat-card resolucion">
                 <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#60a5fa' }}>{statsHistorial.ratio}%</div>
                 <div style={{ fontSize: '0.8rem', color: '#60a5fa', fontWeight: '600', textTransform: 'uppercase' }}>Resolución</div>
               </div>
@@ -128,25 +332,25 @@ export default function TareasView() {
       </header>
 
       {/* Toggles (Kanban vs Historial) */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="tecnico-toggles">
         <button 
           onClick={() => setVistaActiva("kanban")}
+          className="tecnico-toggle-btn"
           style={{ 
-            padding: '12px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '0.95rem',
             background: vistaActiva === "kanban" ? '#1e293b' : '#e2e8f0', 
             color: vistaActiva === "kanban" ? '#fff' : '#64748b',
-            transition: 'all 0.2s', boxShadow: vistaActiva === "kanban" ? '0 4px 12px rgba(30, 41, 59, 0.2)' : 'none'
+            boxShadow: vistaActiva === "kanban" ? '0 4px 12px rgba(30, 41, 59, 0.2)' : 'none'
           }}
         >
           📋 Tablero Kanban
         </button>
         <button 
           onClick={() => setVistaActiva("historial")}
+          className="tecnico-toggle-btn"
           style={{ 
-            padding: '12px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '0.95rem',
             background: vistaActiva === "historial" ? '#1e293b' : '#e2e8f0', 
             color: vistaActiva === "historial" ? '#fff' : '#64748b',
-            transition: 'all 0.2s', boxShadow: vistaActiva === "historial" ? '0 4px 12px rgba(30, 41, 59, 0.2)' : 'none'
+            boxShadow: vistaActiva === "historial" ? '0 4px 12px rgba(30, 41, 59, 0.2)' : 'none'
           }}
         >
           📊 Historial de Cierres
@@ -158,23 +362,11 @@ export default function TareasView() {
 
       {vistaActiva === "kanban" ? (
         /* Kanban Operativo — fluido */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="tecnico-kanban-grid">
         {agrupado.map((col) => (
-          <div key={col.id} style={{ 
-            background: '#fff', 
-            borderRadius: '20px', 
-            overflow: 'hidden',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.04)',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
+          <div key={col.id} className="tecnico-kanban-column">
             {/* Column Header */}
-            <div style={{ 
-              padding: '14px 18px', 
-              background: COL_COLORES[col.key] || '#64748b',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-            }}>
+            <div className="tecnico-column-header" style={{ background: COL_COLORES[col.key] || '#64748b' }}>
               <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {col.title}
               </h3>
@@ -184,23 +376,12 @@ export default function TareasView() {
             </div>
 
             {/* Cards */}
-            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '500px' }}>
+            <div className="tecnico-column-body">
               {col.items.map((tarea) => {
                 const estilo = PRIORIDAD_ESTILOS[tarea.prioridad] || PRIORIDAD_ESTILOS.media;
                 const finalizada = esFinal(tarea.estado);
                 return (
-                  <article key={tarea.id} style={{
-                    background: finalizada ? '#f8fafc' : '#fff',
-                    borderRadius: '16px',
-                    padding: '1.25rem',
-                    border: `1px solid ${finalizada ? '#e2e8f0' : '#e2e8f0'}`,
-                    opacity: finalizada ? 0.7 : 1,
-                    transition: 'transform 0.2s',
-                    cursor: 'default'
-                  }}
-                  onMouseOver={(e) => !finalizada && (e.currentTarget.style.transform = 'translateY(-3px)')}
-                  onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-                  >
+                  <article key={tarea.id} className={`tecnico-card ${finalizada ? 'finalizada' : ''}`}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
                       <span style={{ 
                         background: estilo.bg, color: estilo.color, 
@@ -289,11 +470,7 @@ export default function TareasView() {
               })}
 
               {col.items.length === 0 && (
-                <div style={{
-                  textAlign: 'center', padding: '2.5rem 1rem',
-                  border: '2px dashed #e2e8f0', borderRadius: '16px',
-                  color: '#cbd5e1', fontSize: '0.85rem', fontWeight: '600'
-                }}>
+                <div className="tecnico-empty-placeholder">
                   Sin tareas aquí
                 </div>
               )}
@@ -303,12 +480,12 @@ export default function TareasView() {
       </div>
       ) : (
         /* Vista de Historial (H051) */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        <div className="tecnico-kanban-grid">
           {historial.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: '#fff', borderRadius: '16px', border: '2px dashed #e2e8f0', color: '#94a3b8' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
-              <h3 style={{ margin: 0, fontWeight: '700', color: '#64748b' }}>No hay tareas cerradas</h3>
-              <p style={{ marginTop: '8px', fontSize: '0.9rem' }}>Las tareas que marques como completadas o rechazadas aparecerán aquí.</p>
+            <div className="tecnico-empty-container">
+              <div className="tecnico-empty-icon-wrapper">📮</div>
+              <h3>No hay tareas cerradas</h3>
+              <p>Las tareas que marques como completadas o rechazadas aparecerán aquí.</p>
             </div>
           )}
           {historial.map(tarea => {
