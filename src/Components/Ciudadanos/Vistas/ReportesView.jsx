@@ -131,34 +131,21 @@ export default function CiudadanoReportesView() {
   return (
     <section style={{ paddingBottom: '3rem' }}>
       {/* Header Estilo Banner Premium */}
-      <div className="network-nodes-bg" style={{ 
-        background: 'linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%)', 
-        borderRadius: isMobile ? '12px' : '16px', 
-        padding: isMobile ? '1.25rem' : '2rem', 
-        color: '#fff',
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between',
-        alignItems: isMobile ? 'stretch' : 'center',
-        marginBottom: '2rem',
-        gap: isMobile ? '1.25rem' : '1.5rem',
-        boxShadow: '0 10px 25px -5px var(--primary-glow)'
-      }}>
+      <div className="citizen-banner network-nodes-bg">
         <div>
-          <h1 style={{ margin: 0, fontSize: isMobile ? '1.6rem' : '2rem', fontWeight: '800' }}>Reportes Ciudadanos</h1>
-          <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: isMobile ? '0.95rem' : '1.1rem' }}>Ayuda a mejorar tu comunidad reportando problemas en la infraestructura</p>
+          <h1>Reportes Ciudadanos</h1>
+          <p>Ayuda a mejorar tu comunidad reportando problemas en la infraestructura</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
+        <div className="citizen-banner-actions">
           <button onClick={manejarVincular} style={{ 
             background: 'rgba(255,255,255,0.1)', 
             border: '1px solid rgba(255,255,255,0.2)',
             color: '#fff',
-            padding: isMobile ? '10px 16px' : '12px 20px',
+            padding: '10px 16px',
             borderRadius: '12px',
             cursor: 'pointer',
             fontWeight: '600',
             backdropFilter: 'blur(10px)',
-            width: isMobile ? '100%' : 'auto',
             textAlign: 'center'
           }}>
             💼 Vincular Código
@@ -167,12 +154,11 @@ export default function CiudadanoReportesView() {
             background: '#fff', 
             color: 'var(--primary)',
             border: '1px solid rgba(122, 24, 53, 0.15)',
-            padding: isMobile ? '10px 16px' : '12px 24px',
+            padding: '10px 24px',
             borderRadius: '12px',
             cursor: 'pointer',
             fontWeight: '700',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            width: isMobile ? '100%' : 'auto',
             textAlign: 'center'
           }}>
             📝 Nueva Denuncia
@@ -181,27 +167,22 @@ export default function CiudadanoReportesView() {
       </div>
 
       {/* Grid de Estadísticas con Estilo del Diseño */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: isMobile ? '0.85rem' : '1.5rem', 
-        marginBottom: '2rem' 
-      }}>
-        <div style={{ background: '#fff', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid #eef2f6', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#0f172a', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.total}</div>
-          <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>Total Reportes</div>
+      <div className="citizen-stats-grid">
+        <div className="citizen-stat-card">
+          <div className="citizen-stat-val total">{estadisticas.total}</div>
+          <div className="citizen-stat-label total">Total Reportes</div>
         </div>
-        <div style={{ background: '#fff1f2', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid #ffe4e6' }}>
-          <div style={{ color: '#e11d48', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.criticos}</div>
-          <div style={{ color: '#fb7185', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>Urgencia Crítica</div>
+        <div className="citizen-stat-card critical">
+          <div className="citizen-stat-val critical">{estadisticas.criticos}</div>
+          <div className="citizen-stat-label critical">Urgencia Crítica</div>
         </div>
-        <div style={{ background: 'var(--primary-light)', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid rgba(122, 24, 53, 0.1)' }}>
-          <div style={{ color: 'var(--primary)', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.enProgreso}</div>
-          <div style={{ color: 'var(--primary-hover)', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>En Progreso</div>
+        <div className="citizen-stat-card progress">
+          <div className="citizen-stat-val progress">{estadisticas.enProgreso}</div>
+          <div className="citizen-stat-label progress">En Progreso</div>
         </div>
-        <div style={{ background: '#f0fdf4', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid #dcfce7' }}>
-          <div style={{ color: '#15803d', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.completados}</div>
-          <div style={{ color: '#4ade80', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>Completados</div>
+        <div className="citizen-stat-card completed">
+          <div className="citizen-stat-val completed">{estadisticas.completados}</div>
+          <div className="citizen-stat-label completed">Completados</div>
         </div>
       </div>
 

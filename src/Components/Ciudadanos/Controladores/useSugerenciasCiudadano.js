@@ -24,6 +24,17 @@ export function useSugerenciasCiudadano() {
     return creada;
   }, []);
 
-  return { items, meta, cargarSugerencias, crear };
+  const actualizar = useCallback(async (idSugerencia, payload) => {
+    const actualizada = await sugerenciasCiudadanoModel.actualizar(idSugerencia, payload);
+    setItems((prev) => prev.map((item) => (item.id === actualizada.id ? actualizada : item)));
+    return actualizada;
+  }, []);
+
+  const eliminar = useCallback(async (idSugerencia) => {
+    await sugerenciasCiudadanoModel.eliminar(idSugerencia);
+    setItems((prev) => prev.filter((item) => item.id !== idSugerencia));
+  }, []);
+
+  return { items, meta, cargarSugerencias, crear, actualizar, eliminar };
 }
 

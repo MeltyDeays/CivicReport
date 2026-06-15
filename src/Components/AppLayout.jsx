@@ -109,7 +109,7 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${esCiudadano ? "app-shell-citizen" : ""}`}>
       
       {/* Overlay para cerrar Sidebar en móviles al hacer click fuera */}
       {!esCiudadano && (

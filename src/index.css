@@ -144,6 +144,10 @@ body {
   min-height: 100vh;
 }
 
+.app-shell.app-shell-citizen {
+  grid-template-columns: 1fr;
+}
+
 .sidebar {
   background: linear-gradient(180deg, var(--dark-sidebar-start) 0%, var(--dark-sidebar-end) 100%);
   color: #f7eded;
@@ -935,6 +939,158 @@ textarea:focus {
 .sidebar-overlay.active {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ==========================================================================
+   COMPONENTES EXCLUSIVOS DE CIUDADANOS (RESPONSIVOS & MÓVILES)
+   ========================================================================== */
+
+/* Banner de Cabecera Ciudadana */
+.citizen-banner {
+  background: linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  color: #fff;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1.5rem;
+  box-shadow: 0 10px 25px -5px var(--primary-glow);
+}
+
+.citizen-banner h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.citizen-banner p {
+  margin: 8px 0 0;
+  opacity: 0.9;
+  font-size: 1.1rem;
+}
+
+.citizen-banner-actions {
+  display: flex;
+  gap: 10px;
+  flex-direction: row;
+  width: auto;
+}
+
+.citizen-banner-actions button {
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .citizen-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.25rem;
+    border-radius: 12px;
+    gap: 1.25rem;
+  }
+  .citizen-banner h1 {
+    font-size: 1.6rem !important;
+  }
+  .citizen-banner p {
+    font-size: 0.95rem !important;
+  }
+  .citizen-banner-actions {
+    flex-direction: column;
+    width: 100% !important;
+  }
+  .citizen-banner-actions button {
+    width: 100% !important;
+  }
+}
+
+/* Grid y Tarjetas de Estadísticas Ciudadanas */
+.citizen-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.citizen-stat-card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #eef2f6;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.citizen-stat-card.critical {
+  background: #fff1f2;
+  border-color: #ffe4e6;
+}
+
+.citizen-stat-card.progress {
+  background: var(--primary-light);
+  border-color: rgba(122, 24, 53, 0.1);
+}
+
+.citizen-stat-card.completed {
+  background: #f0fdf4;
+  border-color: #dcfce7;
+}
+
+.citizen-stat-val {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.citizen-stat-val.total {
+  color: #0f172a;
+}
+
+.citizen-stat-val.critical {
+  color: #e11d48;
+}
+
+.citizen-stat-val.progress {
+  color: var(--primary);
+}
+
+.citizen-stat-val.completed {
+  color: #15803d;
+}
+
+.citizen-stat-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.citizen-stat-label.total {
+  color: #64748b;
+}
+
+.citizen-stat-label.critical {
+  color: #fb7185;
+}
+
+.citizen-stat-label.progress {
+  color: var(--primary-hover);
+}
+
+.citizen-stat-label.completed {
+  color: #4ade80;
+}
+
+@media (max-width: 768px) {
+  .citizen-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.85rem !important;
+  }
+  .citizen-stat-card {
+    padding: 1rem !important;
+  }
+  .citizen-stat-val {
+    font-size: 1.5rem !important;
+  }
 }
 
 

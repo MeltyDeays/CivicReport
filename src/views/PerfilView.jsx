@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "../modules/auth/controllers/useAuth";
 import { useDenunciasCiudadano } from "../Components/Ciudadanos/Controladores/useDenunciasCiudadano";
+import { useSugerenciasCiudadano } from "../Components/Ciudadanos/Controladores/useSugerenciasCiudadano";
 import ModalDetalleReporte from "../modals/ReportDetailModal";
+import ModalFormularioReporte from "../modals/ReportFormModal";
+import PaymentModal from "../modals/PaymentModal";
 
 function formatearCedula(ced) {
   if (!ced) return "—";
@@ -24,7 +27,9 @@ const ETIQUETAS_ROL = {
 
 export default function VistaPerfil() {
   const { perfil, sesion, actualizarPerfil, solicitarBaja, logout } = useAuth();
-  const { reportes, actualizarFirmaLocal } = useDenunciasCiudadano();
+  const { reportes, actualizarFirmaLocal, actualizar, eliminar, cargarReportes } = useDenunciasCiudadano();
+  const { items: sugerencias, cargarSugerencias, actualizar: actualizarSug, eliminar: eliminarSug } = useSugerenciasCiudadano();
+
   const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
   const [editando, setEditando] = useState(false);
   const [nombreTemp, setNombreTemp] = useState("");
@@ -34,6 +39,55 @@ export default function VistaPerfil() {
   const [motivoBaja, setMotivoBaja] = useState("");
   const [procesandoBaja, setProcesandoBaja] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
+
+  const [modalFormularioAbierto, setModalFormularioAbierto] = useState(false);
+  const [modoFormulario, setModoFormulario] = useState("crear");
+  const [reporteEnEdicion, setReporteEnEdicion] = useState(null);
+  const [denunciaPago, setDenunciaPago] = useState(null);
+
+  const abrirEditar = (reporte) => {
+    setModoFormulario("editar");
+    setReporteEnEdicion(reporte);
+    setModalFormularioAbierto(true);
+  };
+
+  const guardarReporte = async (payload) => {
+    try {
+      if (modoFormulario === "editar" && reporteEnEdicion?.id) {
+        let actualizado;
+        if (reporteEnEdicion.tipo_incidencia === 'sugerencia') {
+          actualizado = await actualizarSug(reporteEnEdicion.id, payload);
+          actualizado.tipo_incidencia = 'sugerencia';
+        } else {
+          actualizado = await actualizar(reporteEnEdicion.id, payload);
+          actualizado.tipo_incidencia = 'denuncia';
+        }
+
+        if (reporteSeleccionado?.id === actualizado.id) {
+          setReporteSeleccionado(actualizado);
+        }
+        setModalFormularioAbierto(false);
+        mostrarToast("Actualizado con éxito.");
+        return;
+      }
+    } catch (error) {
+      mostrarToast("Ocurrió un error al guardar: " + error.message, "error");
+    }
+  };
+
+  const borrarReporte = async (reporte) => {
+    try {
+      if (reporte.tipo_incidencia === 'sugerencia') {
+        await eliminarSug(reporte.id);
+      } else {
+        await eliminar(reporte.id);
+      }
+      setReporteSeleccionado(null);
+      mostrarToast("Eliminado correctamente.");
+    } catch (error) {
+      mostrarToast("Error al eliminar: " + error.message, "error");
+    }
+  };
 
   const mostrarToast = (msg, tipo = "ok") => {
     setToast({ msg, tipo });
@@ -267,12 +321,23 @@ export default function VistaPerfil() {
 
       {/* Historial de mis Reportes */}
       {perfil?.rol === 'ciudadano' && (() => {
-        const misReportes = reportes.filter(r => r.id_ciudadano === sesion?.user?.id);
+        const misDenuncias = reportes
+          .filter(r => r.id_ciudadano === sesion?.user?.id)
+          .map(r => ({ ...r, tipo_incidencia: 'denuncia' }));
+
+        const misSugerencias = sugerencias
+          .filter(s => s.id_ciudadano === sesion?.user?.id)
+          .map(s => ({ ...s, tipo_incidencia: 'sugerencia', categoria: 'Propuesta' }));
+
+        const misElementos = [...misDenuncias, ...misSugerencias].sort(
+          (a, b) => new Date(b.creado_el) - new Date(a.creado_el)
+        );
+
         const reportesPorPagina = 5;
-        const totalPaginas = Math.ceil(misReportes.length / reportesPorPagina);
+        const totalPaginas = Math.ceil(misElementos.length / reportesPorPagina);
         const indexUltimo = paginaActual * reportesPorPagina;
         const indexPrimer = indexUltimo - reportesPorPagina;
-        const reportesPaginados = misReportes.slice(indexPrimer, indexUltimo);
+        const reportesPaginados = misElementos.slice(indexPrimer, indexUltimo);
 
         return (
           <div style={{
@@ -285,7 +350,7 @@ export default function VistaPerfil() {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 8 }}>
-                📂 Historial de mis Reportes
+                📂 Historial de mis Reportes y Propuestas
               </h2>
               <span style={{ 
                 background: 'var(--primary)', 
@@ -296,11 +361,11 @@ export default function VistaPerfil() {
                 borderRadius: '20px',
                 boxShadow: '0 4px 10px rgba(122, 24, 53, 0.2)'
               }}>
-                {misReportes.length} Total
+                {misElementos.length} Total
               </span>
             </div>
             <p style={{ margin: "0 0 24px", fontSize: 13.5, color: "#64748b", lineHeight: 1.5 }}>
-              Aquí puedes ver el estado actual de todas tus denuncias, incluyendo las resueltas y en espera de atención.
+              Aquí puedes ver el estado actual de todas tus denuncias y sugerencias, incluyendo las resueltas y en espera de atención.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -311,6 +376,10 @@ export default function VistaPerfil() {
                     rep.estado === 'en_reparacion' ? { bg: '#eff6ff', text: '#1d4ed8', border: '#dbeafe', label: 'En Progreso' } :
                     rep.estado === 'rechazado' ? { bg: '#fee2e2', text: '#b91c1c', border: '#fecaca', label: 'Rechazado' } :
                     { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0', label: 'Pendiente' };
+
+                  const icono = rep.tipo_incidencia === 'sugerencia' 
+                    ? '💡' 
+                    : (rep.problematica?.icono || ({ Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋' }[rep.categoria] || '📋'));
 
                   return (
                     <div
@@ -352,12 +421,15 @@ export default function VistaPerfil() {
                           fontSize: '1.1rem',
                           flexShrink: 0
                         }}>
-                          {rep.problematica?.icono || ({ Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋' }[rep.categoria] || '📋')}
+                          {icono}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: "#1e293b", lineHeight: '1.35', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {rep.titulo}
                           </h4>
+                          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>
+                            {rep.tipo_incidencia === 'sugerencia' ? '💡 Propuesta' : '📋 Denuncia'}
+                          </span>
                         </div>
                       </div>
 
@@ -403,7 +475,7 @@ export default function VistaPerfil() {
                 })
               ) : (
                 <div style={{ textAlign: "center", padding: "2rem", background: "#ffffff", borderRadius: 16, border: "1px dashed #cbd5e1" }}>
-                  <p style={{ margin: 0, color: "#64748b", fontWeight: 600 }}>Aún no has creado ningún reporte.</p>
+                  <p style={{ margin: 0, color: "#64748b", fontWeight: 600 }}>Aún no has creado ningún reporte o propuesta.</p>
                 </div>
               )}
             </div>
@@ -556,11 +628,38 @@ export default function VistaPerfil() {
         <ModalDetalleReporte
           reporte={reporteSeleccionado}
           alCerrar={() => setReporteSeleccionado(null)}
+          alEditar={abrirEditar}
+          alEliminar={borrarReporte}
           alCambiarFirma={actualizarFirmaLocal}
+          alPagar={(rep) => {
+            setReporteSeleccionado(null);
+            setDenunciaPago(rep);
+          }}
           usuarioId={sesion?.user?.id}
-          soloLectura={true}
         />
       )}
+
+      {modalFormularioAbierto && (
+        <ModalFormularioReporte
+          abierto={modalFormularioAbierto}
+          modo={modoFormulario}
+          reporteInicial={reporteEnEdicion}
+          alCerrar={() => setModalFormularioAbierto(false)}
+          alGuardar={guardarReporte}
+        />
+      )}
+
+      <PaymentModal
+        abierto={Boolean(denunciaPago)}
+        denuncia={denunciaPago}
+        alCerrar={() => setDenunciaPago(null)}
+        alExito={async () => {
+          await cargarReportes();
+          await cargarSugerencias();
+          setDenunciaPago(null);
+          mostrarToast("¡Incidencia destacada con éxito!");
+        }}
+      />
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes slideUp {
