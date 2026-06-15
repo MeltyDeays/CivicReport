@@ -95,15 +95,24 @@ export default function AdminEntidadReportesView() {
   const conteoInfra = items.length;
   const conteoSugerencias = 0; // placeholder - sugerencias are in another module
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <section style={{ padding: '28px 32px', background: '#f1f5f9', minHeight: '100%' }}>
+    <section style={{ padding: isMobile ? '12px 16px' : '28px 32px', background: '#f1f5f9', minHeight: '100%', paddingBottom: '4rem' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ 
+        marginBottom: '24px', 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row', 
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'stretch' : 'center',
+        gap: isMobile ? '12px' : '1.5rem'
+      }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '22px' : '28px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>
             Gestión de Reportes
           </h1>
-          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '14px', fontWeight: '500' }}>
+          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: isMobile ? '12px' : '14px', fontWeight: '500' }}>
             Revisa y gestiona todas las denuncias ciudadanas. Puedes agregar cualquiera al tablero de proyectos.
           </p>
         </div>
@@ -112,7 +121,8 @@ export default function AdminEntidadReportesView() {
           style={{
             padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
             cursor: 'pointer', border: '1px solid #cbd5e1', background: '#fff', color: '#0f172a',
-            display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+            display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            justifyContent: 'center', width: isMobile ? '100%' : 'auto'
           }}
         >
           📥 Exportar CSV
@@ -120,7 +130,7 @@ export default function AdminEntidadReportesView() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setTabActivo("infraestructura")}
           style={{
@@ -129,7 +139,9 @@ export default function AdminEntidadReportesView() {
             background: tabActivo === "infraestructura"
               ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : '#fff',
             color: tabActivo === "infraestructura" ? '#fff' : '#64748b',
-            boxShadow: tabActivo === "infraestructura" ? '0 4px 12px rgba(37,99,235,0.3)' : '0 1px 3px rgba(0,0,0,0.05)'
+            boxShadow: tabActivo === "infraestructura" ? '0 4px 12px rgba(37,99,235,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+            flex: isMobile ? '1' : 'none',
+            whiteSpace: 'nowrap'
           }}
         >
           🏗️ Infraestructura ({conteoInfra})
@@ -142,7 +154,9 @@ export default function AdminEntidadReportesView() {
             background: tabActivo === "sugerencias"
               ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : '#fff',
             color: tabActivo === "sugerencias" ? '#fff' : '#64748b',
-            boxShadow: tabActivo === "sugerencias" ? '0 4px 12px rgba(139,92,246,0.3)' : '0 1px 3px rgba(0,0,0,0.05)'
+            boxShadow: tabActivo === "sugerencias" ? '0 4px 12px rgba(139,92,246,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+            flex: isMobile ? '1' : 'none',
+            whiteSpace: 'nowrap'
           }}
         >
           💡 Sugerencias & Reformas ({conteoSugerencias})
@@ -150,28 +164,32 @@ export default function AdminEntidadReportesView() {
       </div>
 
       {/* Filters Bar */}
-      <div style={{
-        background: '#fff', borderRadius: '14px', padding: '12px 16px',
-        display: 'flex', gap: '12px', alignItems: 'center',
-        border: '1px solid #e2e8f0', marginBottom: '16px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      <div className="toolbar-premium" style={{
+        marginBottom: '16px',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'center',
+        gap: '10px'
       }}>
-        <span style={{ color: '#94a3b8', fontSize: '16px' }}>🔍</span>
-        <input
-          style={{
-            flex: 1, padding: '10px 0', border: 'none', outline: 'none',
-            fontSize: '14px', color: '#334155', fontWeight: '500',
-            background: 'transparent'
-          }}
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, borderBottom: isMobile ? '1px solid #e2e8f0' : 'none', paddingBottom: isMobile ? '8px' : '0' }}>
+          <span style={{ color: '#94a3b8', fontSize: '16px' }}>🔍</span>
+          <input
+            style={{
+              flex: 1, padding: '6px 0', border: 'none', outline: 'none',
+              fontSize: '14px', color: '#334155', fontWeight: '500',
+              background: 'transparent'
+            }}
+            placeholder="Buscar..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
         <select
           className="minimal-select"
           style={{
             padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0',
-            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px'
+            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px',
+            width: isMobile ? '100%' : 'auto'
           }}
           value={filtroDep}
           onChange={(e) => setFiltroDep(e.target.value)}
@@ -185,7 +203,8 @@ export default function AdminEntidadReportesView() {
           className="minimal-select"
           style={{
             padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0',
-            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px'
+            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px',
+            width: isMobile ? '100%' : 'auto'
           }}
           value={filtroUrgencia}
           onChange={(e) => setFiltroUrgencia(e.target.value)}
@@ -236,40 +255,55 @@ export default function AdminEntidadReportesView() {
               >
                 {/* Main row */}
                 <div style={{
-                  padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px'
+                  padding: isMobile ? '12px' : '16px 20px',
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'stretch' : 'center',
+                  gap: isMobile ? '10px' : '14px'
                 }}>
-                  {/* Thumbnail */}
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '10px',
-                    overflow: 'hidden', flexShrink: 0, background: '#f1f5f9'
-                  }}>
-                    {item.url_imagen ? (
-                      <img src={item.url_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <div style={{
-                        width: '100%', height: '100%', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', fontSize: '20px'
-                      }}>
-                        {catIcon}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Title & Location */}
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, overflow: 'hidden' }}>
+                    {/* Thumbnail */}
                     <div style={{
-                      fontSize: '14px', fontWeight: '700', color: '#0f172a',
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                      width: isMobile ? '40px' : '48px', height: isMobile ? '40px' : '48px', borderRadius: '10px',
+                      overflow: 'hidden', flexShrink: 0, background: '#f1f5f9'
                     }}>
-                      {item.titulo}
+                      {item.url_imagen ? (
+                        <img src={item.url_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{
+                          width: '100%', height: '100%', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? '16px' : '20px'
+                        }}>
+                          {catIcon}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500', marginTop: '3px' }}>
-                      📍 {item.direccion || item.municipio}, {item.municipio} — {item.departamento}, {item.departamento}
+
+                    {/* Title & Location */}
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{
+                        fontSize: isMobile ? '13px' : '14px', fontWeight: '700', color: '#0f172a',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                      }}>
+                        {item.titulo}
+                      </div>
+                      <div style={{ fontSize: isMobile ? '11px' : '12px', color: '#94a3b8', fontWeight: '500', marginTop: '3px' }}>
+                        📍 {item.direccion || item.municipio}, {item.municipio}
+                      </div>
                     </div>
                   </div>
 
                   {/* Badges */}
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '6px', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap',
+                    flexShrink: 0,
+                    justifyContent: isMobile ? 'flex-start' : 'flex-end',
+                    borderTop: isMobile ? '1px solid #f1f5f9' : 'none',
+                    paddingTop: isMobile ? '8px' : '0'
+                  }}>
                     <span style={{
                       padding: '4px 10px', borderRadius: '6px', fontSize: '11px',
                       fontWeight: '700', background: '#f1f5f9', color: '#475569',
@@ -291,7 +325,8 @@ export default function AdminEntidadReportesView() {
                     </span>
                     <span style={{
                       fontSize: '12px', color: '#94a3b8', fontWeight: '600',
-                      display: 'flex', alignItems: 'center', gap: '4px'
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      marginLeft: isMobile ? 'auto' : '0'
                     }}>
                       ✍️ {item.firmas || 0}
                     </span>
@@ -302,31 +337,36 @@ export default function AdminEntidadReportesView() {
                 {/* Expanded content */}
                 {(isExpanded || isFirst) && (
                   <div style={{
-                    padding: '0 20px 16px', borderTop: '1px solid #f1f5f9'
+                    padding: isMobile ? '0 12px 12px' : '0 20px 16px', borderTop: '1px solid #f1f5f9'
                   }}
                   onClick={(e) => e.stopPropagation()}
                   >
-                    <div style={{ padding: '16px 0', display: 'flex', gap: '20px' }}>
+                    <div style={{ padding: '12px 0', display: 'flex', gap: '20px' }}>
                       <div style={{ flex: 1 }}>
                         <p style={{ margin: '0 0 12px', fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>
                           {item.descripcion}
                         </p>
-                        <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>
                           <span>📅 {formatearFecha(item.creado_el)}</span>
                           <span>👤 {item.perfiles?.nombre_completo || 'Ciudadano'}</span>
-                          <span>✍️ {item.firmas || 0} firmas</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '8px', 
+                      flexDirection: isMobile ? 'column' : 'row',
+                      justifyContent: 'flex-end',
+                      width: '100%' 
+                    }}>
                       {item.es_falso_reporte ? (
                         <span style={{
                           padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
                           fontWeight: '700', border: '1px solid #cbd5e1',
                           background: '#f1f5f9', color: '#64748b', display: 'inline-flex',
-                          alignItems: 'center', gap: '6px'
+                          alignItems: 'center', gap: '6px', justifyContent: 'center'
                         }}>
                           ⚠️ Reportado
                         </span>
@@ -336,7 +376,8 @@ export default function AdminEntidadReportesView() {
                           style={{
                             padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
                             fontWeight: '700', cursor: 'pointer', border: '1px solid #fee2e2',
-                            background: '#fef2f2', color: '#ef4444', transition: 'all 0.2s'
+                            background: '#fef2f2', color: '#ef4444', transition: 'all 0.2s',
+                            width: isMobile ? '100%' : 'auto', textAlign: 'center'
                           }}
                         >
                           ⚠️ Reportar Falso
@@ -350,7 +391,8 @@ export default function AdminEntidadReportesView() {
                           borderWidth: '1px', borderStyle: 'solid',
                           borderColor: item.es_visible === false ? '#fee2e2' : '#e2e8f0',
                           background: item.es_visible === false ? '#fef2f2' : '#f8fafc', 
-                          color: item.es_visible === false ? '#ef4444' : '#475569', transition: 'all 0.2s'
+                          color: item.es_visible === false ? '#ef4444' : '#475569', transition: 'all 0.2s',
+                          width: isMobile ? '100%' : 'auto', textAlign: 'center'
                         }}
                       >
                         {item.es_visible === false ? '👁️ Oculto (Mostrar)' : '👁️ Ocultar del Público'}
@@ -364,7 +406,8 @@ export default function AdminEntidadReportesView() {
                           border: 'none', transition: 'all 0.2s',
                           background: enTablero[item.id] ? '#ecfdf5' : 'linear-gradient(135deg, #3b82f6, #2563eb)',
                           color: enTablero[item.id] ? '#10b981' : '#fff',
-                          boxShadow: enTablero[item.id] ? 'none' : '0 4px 12px rgba(37,99,235,0.3)'
+                          boxShadow: enTablero[item.id] ? 'none' : '0 4px 12px rgba(37,99,235,0.3)',
+                          width: isMobile ? '100%' : 'auto', textAlign: 'center'
                         }}
                       >
                         {enTablero[item.id] ? '✅ En Tablero' : agregando === item.id ? '⏳...' : '+ Agregar Proyecto'}
@@ -373,7 +416,8 @@ export default function AdminEntidadReportesView() {
                         style={{
                           padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
                           fontWeight: '700', cursor: 'pointer', border: '1px solid #e2e8f0',
-                          background: '#fff', color: '#475569', transition: 'all 0.2s'
+                          background: '#fff', color: '#475569', transition: 'all 0.2s',
+                          width: isMobile ? '100%' : 'auto', textAlign: 'center'
                         }}
                         onClick={() => setDenunciaOrden(item)}
                       >

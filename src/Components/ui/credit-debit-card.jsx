@@ -34,7 +34,7 @@ export const FlippableCreditCard = React.forwardRef(
             height: '100%',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            background: 'linear-gradient(135deg, #5c0f26 0%, #1c050c 100%)',
             color: '#ffffff',
             borderRadius: '16px',
             overflow: 'hidden',
@@ -42,13 +42,13 @@ export const FlippableCreditCard = React.forwardRef(
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: '20px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(194, 159, 104, 0.35)'
           }}>
             {/* Encabezado: Chip y Logo Textual */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <svg style={{ height: '32px', width: '42px', opacity: 0.9 }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 40">
-                <rect width="50" height="36" rx="8" fill="#d4af37" />
-                <path d="M 0 12 L 15 12 M 0 24 L 15 24 M 35 12 L 50 12 M 35 24 L 50 24 M 15 0 L 15 36 M 35 0 L 35 36" stroke="#b89326" strokeWidth="2" fill="none" />
+                <rect width="50" height="36" rx="8" fill="#c29f68" />
+                <path d="M 0 12 L 15 12 M 0 24 L 15 24 M 35 12 L 50 12 M 35 24 L 50 24 M 15 0 L 15 36 M 35 0 L 35 36" stroke="#a17f4b" strokeWidth="2" fill="none" />
               </svg>
               <p style={{ fontWeight: '800', letterSpacing: '0.1em', fontSize: '13px', margin: 0, color: '#f8fafc', opacity: 0.9 }}>MASTERCARD</p>
             </div>
@@ -78,13 +78,13 @@ export const FlippableCreditCard = React.forwardRef(
             height: '100%',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
-            background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+            background: 'linear-gradient(135deg, #1c050c 0%, #0b0104 100%)',
             color: '#ffffff',
             borderRadius: '16px',
             transform: 'rotateY(180deg)',
             display: 'flex',
             flexDirection: 'column',
-            border: '1px solid rgba(255,255,255,0.05)'
+            border: '1px solid rgba(194, 159, 104, 0.2)'
           }}>
             {/* Banda Magnética */}
             <div style={{ marginTop: '20px', height: '36px', width: '100%', backgroundColor: '#000000', opacity: 0.8 }} />

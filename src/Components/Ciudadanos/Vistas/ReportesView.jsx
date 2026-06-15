@@ -9,7 +9,7 @@ import { DEPARTAMENTOS_NICARAGUA } from "../../../utils/constants";
 
 export default function CiudadanoReportesView() {
   const { vincularCodigoTecnico, sesion } = useAuth();
-  const { reportes, crear, actualizar, eliminar, actualizarFirmaLocal } = useDenunciasCiudadano();
+  const { reportes, crear, actualizar, eliminar, actualizarFirmaLocal, cargarReportes } = useDenunciasCiudadano();
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroDep, setFiltroDep] = useState("todos");
@@ -21,6 +21,8 @@ export default function CiudadanoReportesView() {
   const [modoFormulario, setModoFormulario] = useState("crear");
   const [reporteEnEdicion, setReporteEnEdicion] = useState(null);
   const [denunciaPago, setDenunciaPago] = useState(null);
+  const [vincularCodigoAbierto, setVincularCodigoAbierto] = useState(false);
+  const [codigoVinculacion, setCodigoVinculacion] = useState("");
 
   const reportesFiltrados = useMemo(() => {
     // eslint-disable-next-line react-hooks/purity
@@ -94,17 +96,19 @@ export default function CiudadanoReportesView() {
   };
 
   const borrarReporte = async (reporte) => {
-    const confirmar = window.confirm(`Se eliminara el reporte "${reporte.titulo}". Deseas continuar?`);
-    if (!confirmar) return;
     await eliminar(reporte.id);
     setReporteSeleccionado(null);
   };
 
-  const manejarVincular = async () => {
-    const codigo = window.prompt("Ingresa tu código de invitación de empleado (ej. ENACAL-2026):");
-    if (!codigo) return;
+  const manejarVincular = () => {
+    setCodigoVinculacion("");
+    setVincularCodigoAbierto(true);
+  };
+
+  const procesarVincularCodigo = async () => {
+    if (!codigoVinculacion.trim()) return;
     try {
-      await vincularCodigoTecnico(codigo.trim().toUpperCase());
+      await vincularCodigoTecnico(codigoVinculacion.trim().toUpperCase());
       alert("¡Felicidades! Tu cuenta ha sido ascendida a Técnico. Recargando la página...");
       window.location.reload();
     } catch (error) {
@@ -122,46 +126,54 @@ export default function CiudadanoReportesView() {
     }
   };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <section>
+    <section style={{ paddingBottom: '3rem' }}>
       {/* Header Estilo Banner Premium */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #1f64ff 0%, #1248c7 100%)', 
-        borderRadius: '16px', 
-        padding: '2rem', 
+      <div className="network-nodes-bg" style={{ 
+        background: 'linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%)', 
+        borderRadius: isMobile ? '12px' : '16px', 
+        padding: isMobile ? '1.25rem' : '2rem', 
         color: '#fff',
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         marginBottom: '2rem',
-        boxShadow: '0 10px 25px -5px rgba(31, 100, 255, 0.3)'
+        gap: isMobile ? '1.25rem' : '1.5rem',
+        boxShadow: '0 10px 25px -5px var(--primary-glow)'
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '800' }}>Reportes Ciudadanos</h1>
-          <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: '1.1rem' }}>Ayuda a mejorar tu comunidad reportando problemas en la infraestructura</p>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '1.6rem' : '2rem', fontWeight: '800' }}>Reportes Ciudadanos</h1>
+          <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: isMobile ? '0.95rem' : '1.1rem' }}>Ayuda a mejorar tu comunidad reportando problemas en la infraestructura</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
           <button onClick={manejarVincular} style={{ 
             background: 'rgba(255,255,255,0.1)', 
             border: '1px solid rgba(255,255,255,0.2)',
             color: '#fff',
-            padding: '12px 20px',
+            padding: isMobile ? '10px 16px' : '12px 20px',
             borderRadius: '12px',
             cursor: 'pointer',
             fontWeight: '600',
-            backdropFilter: 'blur(10px)'
+            backdropFilter: 'blur(10px)',
+            width: isMobile ? '100%' : 'auto',
+            textAlign: 'center'
           }}>
             💼 Vincular Código
           </button>
           <button onClick={abrirCrear} style={{ 
             background: '#fff', 
-            color: '#1f64ff',
-            border: 'none',
-            padding: '12px 24px',
+            color: 'var(--primary)',
+            border: '1px solid rgba(122, 24, 53, 0.15)',
+            padding: isMobile ? '10px 16px' : '12px 24px',
             borderRadius: '12px',
             cursor: 'pointer',
             fontWeight: '700',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            width: isMobile ? '100%' : 'auto',
+            textAlign: 'center'
           }}>
             📝 Nueva Denuncia
           </button>
@@ -169,37 +181,42 @@ export default function CiudadanoReportesView() {
       </div>
 
       {/* Grid de Estadísticas con Estilo del Diseño */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '16px', border: '1px solid #eef2f6', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#0f172a', fontSize: '2rem', fontWeight: '800' }}>{estadisticas.total}</div>
-          <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.9rem', marginTop: '4px' }}>Total Reportes</div>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: isMobile ? '0.85rem' : '1.5rem', 
+        marginBottom: '2rem' 
+      }}>
+        <div style={{ background: '#fff', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid #eef2f6', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+          <div style={{ color: '#0f172a', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.total}</div>
+          <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>Total Reportes</div>
         </div>
-        <div style={{ background: '#fff1f2', padding: '1.5rem', borderRadius: '16px', border: '1px solid #ffe4e6' }}>
-          <div style={{ color: '#e11d48', fontSize: '2rem', fontWeight: '800' }}>{estadisticas.criticos}</div>
-          <div style={{ color: '#fb7185', fontWeight: '600', fontSize: '0.9rem', marginTop: '4px' }}>Urgencia Crítica</div>
+        <div style={{ background: '#fff1f2', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid #ffe4e6' }}>
+          <div style={{ color: '#e11d48', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.criticos}</div>
+          <div style={{ color: '#fb7185', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>Urgencia Crítica</div>
         </div>
-        <div style={{ background: '#f0f9ff', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e0f2fe' }}>
-          <div style={{ color: '#0369a1', fontSize: '2rem', fontWeight: '800' }}>{estadisticas.enProgreso}</div>
-          <div style={{ color: '#38bdf8', fontWeight: '600', fontSize: '0.9rem', marginTop: '4px' }}>En Progreso</div>
+        <div style={{ background: 'var(--primary-light)', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid rgba(122, 24, 53, 0.1)' }}>
+          <div style={{ color: 'var(--primary)', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.enProgreso}</div>
+          <div style={{ color: 'var(--primary-hover)', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>En Progreso</div>
         </div>
-        <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '16px', border: '1px solid #dcfce7' }}>
-          <div style={{ color: '#15803d', fontSize: '2rem', fontWeight: '800' }}>{estadisticas.completados}</div>
-          <div style={{ color: '#4ade80', fontWeight: '600', fontSize: '0.9rem', marginTop: '4px' }}>Completados</div>
+        <div style={{ background: '#f0fdf4', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '16px', border: '1px solid #dcfce7' }}>
+          <div style={{ color: '#15803d', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>{estadisticas.completados}</div>
+          <div style={{ color: '#4ade80', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>Completados</div>
         </div>
       </div>
 
       {/* Selector de Feed */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button
           onClick={() => setTabFeed("comunidad")}
           style={{
             padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '700',
             cursor: 'pointer', transition: 'all 0.2s',
-            background: tabFeed === "comunidad" ? '#1f64ff' : '#fff',
+            background: tabFeed === "comunidad" ? 'var(--primary)' : '#fff',
             color: tabFeed === "comunidad" ? '#fff' : '#64748b',
             border: '1px solid',
-            borderColor: tabFeed === "comunidad" ? '#1f64ff' : '#eef2f6',
-            boxShadow: tabFeed === "comunidad" ? '0 4px 12px rgba(31,100,255,0.15)' : 'none'
+            borderColor: tabFeed === "comunidad" ? 'var(--primary)' : '#eef2f6',
+            boxShadow: tabFeed === "comunidad" ? '0 4px 12px var(--primary-glow)' : 'none'
           }}
         >
           🌐 Reportes de la Comunidad
@@ -209,11 +226,11 @@ export default function CiudadanoReportesView() {
           style={{
             padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '700',
             cursor: 'pointer', transition: 'all 0.2s',
-            background: tabFeed === "mis_reportes" ? '#1f64ff' : '#fff',
+            background: tabFeed === "mis_reportes" ? 'var(--primary)' : '#fff',
             color: tabFeed === "mis_reportes" ? '#fff' : '#64748b',
             border: '1px solid',
-            borderColor: tabFeed === "mis_reportes" ? '#1f64ff' : '#eef2f6',
-            boxShadow: tabFeed === "mis_reportes" ? '0 4px 12px rgba(31,100,255,0.15)' : 'none'
+            borderColor: tabFeed === "mis_reportes" ? 'var(--primary)' : '#eef2f6',
+            boxShadow: tabFeed === "mis_reportes" ? '0 4px 12px var(--primary-glow)' : 'none'
           }}
         >
           📂 Mis Reportes (Historial)
@@ -221,18 +238,8 @@ export default function CiudadanoReportesView() {
       </div>
 
       {/* Toolbar con Filtros Avanzados */}
-      <div style={{ 
-        background: '#fff', 
-        padding: '1rem', 
-        borderRadius: '16px', 
-        border: '1px solid #eef2f6', 
-        display: 'grid', 
-        gridTemplateColumns: '1fr auto auto auto', 
-        gap: '1rem',
-        alignItems: 'center',
-        marginBottom: '1.5rem'
-      }}>
-        <div style={{ position: 'relative' }}>
+      <div className="toolbar-premium" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
           <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
           <input
             style={{ paddingLeft: '36px', border: '1px solid #e2e8f0', borderRadius: '10px', height: '42px', width: '100%' }}
@@ -241,17 +248,17 @@ export default function CiudadanoReportesView() {
             onChange={(event) => setBusqueda(event.target.value)}
           />
         </div>
-        <select className="minimal-select" style={{ height: '42px', width: '200px' }} value={filtroDep} onChange={(e) => setFiltroDep(e.target.value)}>
+        <select className="minimal-select" style={{ height: '42px', minWidth: '180px' }} value={filtroDep} onChange={(e) => setFiltroDep(e.target.value)}>
           <option value="todos">Todos los departamentos</option>
           {Object.keys(DEPARTAMENTOS_NICARAGUA).map(dep => <option key={dep} value={dep}>{dep}</option>)}
         </select>
-        <select className="minimal-select" style={{ height: '42px', width: '160px' }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+        <select className="minimal-select" style={{ height: '42px', minWidth: '140px' }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
           <option value="todos">Todos los estados</option>
           <option value="pendiente">Pendiente</option>
           <option value="en_reparacion">En progreso</option>
           <option value="completado">Completado</option>
         </select>
-        <select className="minimal-select" style={{ height: '42px', width: '160px' }} value={filtroUrgencia} onChange={(e) => setFiltroUrgencia(e.target.value)}>
+        <select className="minimal-select" style={{ height: '42px', minWidth: '140px' }} value={filtroUrgencia} onChange={(e) => setFiltroUrgencia(e.target.value)}>
           <option value="todos">Todas las urgencias</option>
           <option value="baja">Baja</option>
           <option value="media">Media</option>
@@ -265,7 +272,7 @@ export default function CiudadanoReportesView() {
       </div>
 
       {/* Grid de Cards Estilo Instagram/Figma */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: isMobile ? '1rem' : '2rem' }}>
         {reportesFiltrados.map((item) => (
           <article key={item.id} style={{ 
             background: '#fff', 
@@ -361,8 +368,121 @@ export default function CiudadanoReportesView() {
         abierto={Boolean(denunciaPago)}
         denuncia={denunciaPago}
         alCerrar={() => setDenunciaPago(null)}
-        alExito={() => { setDenunciaPago(null); }}
+        alExito={async () => {
+          await cargarReportes();
+          setDenunciaPago(null);
+        }}
       />
+
+      {/* Modal Premium de Vinculación de Código */}
+      {vincularCodigoAbierto && (
+        <div
+          onClick={() => setVincularCodigoAbierto(false)}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 10000, 
+            padding: '1rem', 
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff', 
+              padding: '2rem', 
+              borderRadius: '24px', 
+              maxWidth: '440px', 
+              width: '100%', 
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
+              border: '1px solid #e2e8f0', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1.25rem'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.2rem', fontWeight: '800' }}>
+                💼 Vincular Código Técnico
+              </h3>
+              <button
+                onClick={() => setVincularCodigoAbierto(false)}
+                style={{
+                  background: '#f1f5f9', border: 'none', color: '#475569',
+                  borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer',
+                  fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}
+              >✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                Ingresa el código de invitación proporcionado por tu entidad institucional (ej. <code>ENACAL-2026</code>) para ascender tu cuenta a Técnico.
+              </p>
+              <input
+                type="text"
+                value={codigoVinculacion}
+                onChange={(e) => setCodigoVinculacion(e.target.value)}
+                placeholder="Escribe el código aquí..."
+                style={{
+                  width: '100%', 
+                  padding: '12px', 
+                  borderRadius: '10px', 
+                  border: '1px solid #cbd5e1', 
+                  fontSize: '1rem',
+                  outline: 'none',
+                  fontWeight: '700',
+                  color: '#1e293b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  textAlign: 'center',
+                  marginTop: '8px'
+                }}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setVincularCodigoAbierto(false)}
+                style={{ 
+                  background: '#f1f5f9', 
+                  color: '#475569', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s' 
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={procesarVincularCodigo}
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 6px var(--primary-glow)'
+                }}
+              >
+                Vincular
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

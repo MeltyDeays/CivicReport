@@ -9,7 +9,7 @@ import { generarReporteEjecutivoSemanal } from "../../../services/iaService";
 const URGENCIA_COLORES = {
   critica: { color: '#ef4444', bg: '#fef2f2', label: 'Crítica' },
   alta: { color: '#f97316', bg: '#fff7ed', label: 'Alta' },
-  media: { color: '#3b82f6', bg: '#eff6ff', label: 'Media' },
+  media: { color: '#c29f68', bg: '#fdfaf5', label: 'Media' },
   baja: { color: '#10b981', bg: '#ecfdf5', label: 'Baja' },
 };
 
@@ -146,7 +146,7 @@ export default function AdminDashboardView() {
   const fechaHoy = hoy.toLocaleDateString('es-NI', opcionesFecha);
 
   return (
-    <section style={{ padding: '28px 32px', background: '#f1f5f9', minHeight: '100%' }}>
+    <section style={{ padding: '28px 32px', background: '#f7f3f5', minHeight: '100%' }}>
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>Dashboard</h1>
@@ -165,12 +165,12 @@ export default function AdminDashboardView() {
         }}>
           <div style={{
             width: '36px', height: '36px', borderRadius: '10px',
-            background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '16px'
           }}>📄</div>
           <div style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', lineHeight: 1 }}>{stats.total}</div>
           <div style={{ fontSize: '13px', fontWeight: '600', color: '#64748b' }}>Total Reportes</div>
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>+{stats.total} esta semana</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>+{stats.total} esta semana</div>
         </div>
 
         {/* Urgencia Crítica */}
@@ -224,10 +224,10 @@ export default function AdminDashboardView() {
 
       {/* Banner Firmas */}
       <div style={{
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
         borderRadius: '16px', padding: '20px 28px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '24px', boxShadow: '0 4px 12px rgba(16,185,129,0.25)'
+        marginBottom: '24px', boxShadow: '0 4px 12px var(--primary-glow)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
@@ -265,11 +265,11 @@ export default function AdminDashboardView() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-gold)' }}>
                 <span>🤖</span> Reportes Ejecutivos IA
               </h2>
               {reporteIA.fecha && (
-                <span style={{ fontSize: '11px', color: '#94a3b8', background: '#1e293b', padding: '4px 10px', borderRadius: '20px', fontWeight: '700' }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8', background: 'var(--dark-bg)', padding: '4px 10px', borderRadius: '20px', fontWeight: '700', border: '1px solid rgba(255,255,255,0.06)' }}>
                   Compilado: {new Date(reporteIA.fecha).toLocaleDateString('es-NI', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
@@ -298,10 +298,10 @@ export default function AdminDashboardView() {
               onClick={manejarGenerarReporte}
               disabled={generandoReporte || !perfil?.id_entidad}
               style={{
-                background: generandoReporte ? '#1e293b' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                background: generandoReporte ? '#1e293b' : 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
                 color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px',
                 fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
+                boxShadow: '0 4px 12px var(--primary-glow)'
               }}
             >
               {generandoReporte ? '⏳ Compilando Reporte...' : '🔄 Generar Reporte Ejecutivo'}
@@ -311,14 +311,14 @@ export default function AdminDashboardView() {
 
         {reporteIA.contenido ? (
           <div style={{
-            background: '#1e293b', borderRadius: '12px', padding: '24px',
-            border: '1px solid #334155', fontSize: '13.5px', color: '#e2e8f0', lineHeight: 1.65,
+            background: 'var(--dark-sidebar-start)', borderRadius: '12px', padding: '24px',
+            border: '1px solid rgba(255,255,255,0.06)', fontSize: '13.5px', color: '#e2e8f0', lineHeight: 1.65,
             maxHeight: '350px', overflowY: 'auto'
           }}>
             {renderizarMarkdown(reporteIA.contenido)}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '13px', fontWeight: '600', background: '#1e293b', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '13px', fontWeight: '600', background: 'var(--dark-sidebar-start)', borderRadius: '12px' }}>
             ℹ️ Aún no se ha generado ningún reporte ejecutivo para esta entidad. Haz click en el botón superior para compilar uno nuevo.
           </div>
         )}
@@ -349,7 +349,7 @@ export default function AdminDashboardView() {
                     width: '100%',
                     maxWidth: '48px',
                     height: `${(count / maxBar) * 140}px`,
-                    background: 'linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)',
+                    background: 'linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%)',
                     borderRadius: '6px 6px 2px 2px',
                     minHeight: '8px',
                     transition: 'height 0.5s ease'
@@ -476,7 +476,7 @@ export default function AdminDashboardView() {
               Reportes Recientes
             </h3>
             <Link to="/admin/reportes" style={{
-              fontSize: '13px', color: '#3b82f6', fontWeight: '600', textDecoration: 'none'
+              fontSize: '13px', color: 'var(--primary)', fontWeight: '600', textDecoration: 'none'
             }}>
               Ver todos
             </Link>
@@ -560,7 +560,7 @@ export default function AdminDashboardView() {
               <button
                 onClick={marcarTodasLeidas}
                 style={{
-                  fontSize: '12px', color: '#3b82f6', fontWeight: '600',
+                  fontSize: '12px', color: 'var(--primary)',
                   background: 'transparent', border: 'none', cursor: 'pointer'
                 }}
               >
@@ -577,8 +577,8 @@ export default function AdminDashboardView() {
             ) : (
               notificaciones.map(n => {
                 const esCritica = n.tipo === 'critica';
-                const colorBorde = esCritica ? '#ef4444' : '#3b82f6';
-                const fondoLeida = n.leida ? 'transparent' : (esCritica ? '#fef2f2' : '#eff6ff');
+                const colorBorde = esCritica ? '#ef4444' : 'var(--primary)';
+                const fondoLeida = n.leida ? 'transparent' : (esCritica ? '#fef2f2' : 'var(--primary-light)');
 
                 const getIcono = (tipo) => {
                   switch (tipo) {
@@ -621,7 +621,7 @@ export default function AdminDashboardView() {
                         <button
                           onClick={() => marcarLeida(n.id)}
                           style={{
-                            marginTop: '8px', fontSize: '11px', color: '#3b82f6',
+                            marginTop: '8px', fontSize: '11px', color: 'var(--primary)',
                             background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: '600'
                           }}
                         >
@@ -645,13 +645,13 @@ function renderizarMarkdown(texto) {
   const lineas = texto.split('\n');
   return lineas.map((linea, idx) => {
     if (linea.startsWith('###')) {
-      return <h4 key={idx} style={{ margin: '14px 0 8px', color: '#10b981', fontWeight: '800', fontSize: '14px' }}>{linea.replace('###', '').trim()}</h4>;
+      return <h4 key={idx} style={{ margin: '14px 0 8px', color: 'var(--accent-gold)', fontWeight: '800', fontSize: '14px' }}>{linea.replace('###', '').trim()}</h4>;
     }
     if (linea.startsWith('##')) {
-      return <h3 key={idx} style={{ margin: '18px 0 10px', color: '#38bdf8', fontWeight: '800', fontSize: '16px' }}>{linea.replace('##', '').trim()}</h3>;
+      return <h3 key={idx} style={{ margin: '18px 0 10px', color: 'var(--accent-gold)', fontWeight: '800', fontSize: '16px' }}>{linea.replace('##', '').trim()}</h3>;
     }
     if (linea.startsWith('#')) {
-      return <h2 key={idx} style={{ margin: '22px 0 12px', color: '#60a5fa', fontWeight: '800', fontSize: '18px' }}>{linea.replace('#', '').trim()}</h2>;
+      return <h2 key={idx} style={{ margin: '22px 0 12px', color: 'var(--accent-gold)', fontWeight: '800', fontSize: '18px' }}>{linea.replace('#', '').trim()}</h2>;
     }
     if (linea.trim().startsWith('-') || linea.trim().startsWith('*')) {
       const limpio = linea.replace(/^[\s-*]+/, '').trim();

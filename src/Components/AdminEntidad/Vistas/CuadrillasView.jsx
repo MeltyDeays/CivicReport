@@ -38,6 +38,7 @@ export default function CuadrillasView() {
   const [enviando, setEnviando] = useState(false);
   const [espReclutamiento, setEspReclutamiento] = useState("general");
   const [generandoInv, setGenerandoInv] = useState(false);
+  const [tecnicoEdicion, setTecnicoEdicion] = useState(null);
 
   const balance = useMemo(() => {
     const todosId = liderId ? [liderId, ...seleccionados] : seleccionados;
@@ -69,48 +70,55 @@ export default function CuadrillasView() {
     }
   };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <section style={{ padding: '2rem', background: '#f8fafc', minHeight: '100vh' }}>
-      <header style={{ 
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
-        borderRadius: '24px', 
-        padding: '2.5rem', 
+    <section style={{ padding: isMobile ? '1rem' : '2rem', background: '#f7f3f5', minHeight: '100vh' }}>
+      <header className="network-nodes-bg" style={{ 
+        background: 'linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%)', 
+        borderRadius: isMobile ? '16px' : '24px', 
+        padding: isMobile ? '1.5rem' : '2.5rem', 
         color: '#fff',
         marginBottom: '2rem',
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: '1.25rem',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+        alignItems: isMobile ? 'stretch' : 'center',
+        boxShadow: '0 20px 25px -5px var(--primary-glow)'
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800' }}>Gestión de Personal</h1>
-          <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: '1.1rem' }}>Organiza tus escuadrones tácticos y recluta nuevos técnicos especializados.</p>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '1.8rem' : '2.2rem', fontWeight: '800' }}>Gestión de Personal</h1>
+          <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: isMobile ? '0.95rem' : '1.1rem' }}>Organiza tus escuadrones tácticos y recluta nuevos técnicos especializados.</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.1)', padding: '6px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.1)', padding: '6px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button 
             onClick={() => setTabActual('cuadrillas')}
             style={{ 
+              flex: isMobile ? 1 : 'none',
               padding: '10px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
               background: tabActual === 'cuadrillas' ? '#fff' : 'transparent',
-              color: tabActual === 'cuadrillas' ? '#0f172a' : '#fff',
+              color: tabActual === 'cuadrillas' ? 'var(--primary)' : '#fff',
               transition: 'all 0.2s'
             }}
           >🛡️ Cuadrillas</button>
           <button 
             onClick={() => setTabActual('personal')}
             style={{ 
+              flex: isMobile ? 1 : 'none',
               padding: '10px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
               background: tabActual === 'personal' ? '#fff' : 'transparent',
-              color: tabActual === 'personal' ? '#0f172a' : '#fff',
+              color: tabActual === 'personal' ? 'var(--primary)' : '#fff',
               transition: 'all 0.2s'
             }}
           >👤 Personal</button>
           <button 
             onClick={() => setTabActual('reclutamiento')}
             style={{ 
+              flex: isMobile ? 1 : 'none',
               padding: '10px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
               background: tabActual === 'reclutamiento' ? '#fff' : 'transparent',
-              color: tabActual === 'reclutamiento' ? '#0f172a' : '#fff',
+              color: tabActual === 'reclutamiento' ? 'var(--primary)' : '#fff',
               transition: 'all 0.2s'
             }}
           >📩 Reclutar</button>
@@ -126,11 +134,11 @@ export default function CuadrillasView() {
       {tabActual === 'cuadrillas' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Header de Sección Cuadrillas */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <h2 style={{ margin: 0, color: '#1e293b', fontWeight: '800' }}>Escuadrones Activos</h2>
             <button 
               onClick={() => setMostrandoForm(!mostrandoForm)}
-              style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '14px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 6px rgba(37,99,235,0.2)' }}
+              style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '14px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 6px var(--primary-glow)' }}
             >
               {mostrandoForm ? "✕ Cerrar Formulario" : "+ Nueva Cuadrilla"}
             </button>
@@ -138,7 +146,7 @@ export default function CuadrillasView() {
 
           {mostrandoForm && (
             <form onSubmit={manejarEnvio} style={{ background: '#fff', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Nombre de la Cuadrilla</label>
                   <input style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc' }} value={nombre} onChange={e => setNombre(e.target.value)} required placeholder="Ej: Equipo de Respuesta Rápida" />
@@ -168,7 +176,7 @@ export default function CuadrillasView() {
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
                     Miembros ({seleccionados.length}/{tamanoMaximo - 1} máx.)
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px', background: '#f8fafc', padding: '1rem', borderRadius: '14px', border: '1px solid #e2e8f0', maxHeight: '240px', overflowY: 'auto' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: '8px', background: '#f8fafc', padding: '1rem', borderRadius: '14px', border: '1px solid #e2e8f0', maxHeight: '240px', overflowY: 'auto' }}>
                     {tecnicos.filter(t => t.id !== liderId && t.activo !== false).map(t => {
                       const checked = seleccionados.includes(t.id);
                       const disabled = !checked && seleccionados.length >= tamanoMaximo - 1;
@@ -203,13 +211,13 @@ export default function CuadrillasView() {
                 </div>
               )}
 
-              <button type="submit" disabled={enviando} style={{ width: '100%', background: '#1e293b', color: '#fff', border: 'none', padding: '16px', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}>
+              <button type="submit" disabled={enviando} style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', padding: '16px', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px var(--primary-glow)' }}>
                 {enviando ? "Consolidando..." : `Consolidar Escuadrón Táctico (${1 + seleccionados.length} miembros)`}
               </button>
             </form>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '2rem' }}>
             {cuadrillas.map(c => (
               <article key={c.id} style={{ background: '#fff', borderRadius: '24px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -248,7 +256,7 @@ export default function CuadrillasView() {
                 )}
 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => alternarEstado(c.id, !c.activa)} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: '700', cursor: 'pointer' }}>
+                  <button onClick={() => alternarEstado(c.id, !c.activa)} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid var(--border-color)', background: '#fff', color: 'var(--primary)', fontWeight: '700', cursor: 'pointer' }}>
                     {c.activa ? "Poner en Reserva" : "Activar"}
                   </button>
                   <button onClick={() => { if(window.confirm("¿Disolver cuadrilla?")) eliminarCuadrilla(c.id) }} style={{ padding: '10px', borderRadius: '10px', border: 'none', background: '#fee2e2', color: '#ef4444', fontWeight: '700', cursor: 'pointer' }}>
@@ -279,12 +287,12 @@ export default function CuadrillasView() {
               </select>
             </div>
 
-            <button type="submit" disabled={generandoInv} style={{ width: '100%', background: '#2563eb', color: '#fff', border: 'none', padding: '16px', borderRadius: '14px', fontWeight: '800', cursor: 'pointer' }}>
+            <button type="submit" disabled={generandoInv} style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', padding: '16px', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 6px var(--primary-glow)' }}>
               {generandoInv ? "Generando Código..." : "+ Generar Código de Invitación"}
             </button>
           </form>
 
-          <div style={{ marginTop: '3rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ marginTop: '3rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))', gap: '1.5rem' }}>
             {invitaciones.map(inv => (
               <article key={inv.id} style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: '900', fontFamily: 'monospace', letterSpacing: '4px', color: '#1e293b', textAlign: 'center', background: '#f1f5f9', padding: '1rem', borderRadius: '12px' }}>
@@ -336,7 +344,7 @@ export default function CuadrillasView() {
               <p style={{ color: '#64748b' }}>Genera códigos de invitación en la pestaña "Reclutar" para incorporar personal.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.5rem' }}>
               {tecnicos.map(tec => {
                 const activo = tec.activo !== false;
                 const procesando = procesandoTec === tec.id;
@@ -376,14 +384,8 @@ export default function CuadrillasView() {
                     <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
                       <button
                         disabled={procesando}
-                        onClick={async () => {
-                          const nuevoNombre = window.prompt('Editar nombre:', tec.nombre_completo);
-                          if (nuevoNombre && nuevoNombre !== tec.nombre_completo) {
-                            setProcesandoTec(tec.id);
-                            try { await editarTecnico(tec.id, { nombre_completo: nuevoNombre }); }
-                            catch (e) { alert(e.message); }
-                            finally { setProcesandoTec(''); }
-                          }
+                        onClick={() => {
+                          setTecnicoEdicion({ id: tec.id, nombre_completo: tec.nombre_completo });
                         }}
                         style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
                       >✏️ Editar</button>
@@ -418,6 +420,123 @@ export default function CuadrillasView() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal Edición de Técnico */}
+      {tecnicoEdicion && (
+        <div
+          onClick={() => setTecnicoEdicion(null)}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 10000, 
+            padding: '1rem', 
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff', 
+              padding: '2rem', 
+              borderRadius: '24px', 
+              maxWidth: '440px', 
+              width: '100%', 
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
+              border: '1px solid #e2e8f0', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1.25rem'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.2rem', fontWeight: '800' }}>
+                ✏️ Editar Nombre de Técnico
+              </h3>
+              <button
+                onClick={() => setTecnicoEdicion(null)}
+                style={{
+                  background: '#f1f5f9', border: 'none', color: '#475569',
+                  borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer',
+                  fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}
+              >✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: '700', color: '#64748b' }}>
+                Nombre Completo:
+              </label>
+              <input
+                type="text"
+                value={tecnicoEdicion.nombre_completo}
+                onChange={(e) => setTecnicoEdicion({ ...tecnicoEdicion, nombre_completo: e.target.value })}
+                style={{
+                  width: '100%', 
+                  padding: '12px', 
+                  borderRadius: '10px', 
+                  border: '1px solid #cbd5e1', 
+                  fontSize: '0.95rem',
+                  outline: 'none',
+                  fontWeight: '600',
+                  color: '#1e293b'
+                }}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setTecnicoEdicion(null)}
+                style={{ 
+                  background: '#f1f5f9', 
+                  color: '#475569', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s' 
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (tecnicoEdicion.nombre_completo.trim()) {
+                    setProcesandoTec(tecnicoEdicion.id);
+                    try {
+                      await editarTecnico(tecnicoEdicion.id, { nombre_completo: tecnicoEdicion.nombre_completo.trim() });
+                    } catch (e) {
+                      alert(e.message);
+                    } finally {
+                      setProcesandoTec('');
+                      setTecnicoEdicion(null);
+                    }
+                  }
+                }}
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 6px var(--primary-glow)'
+                }}
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

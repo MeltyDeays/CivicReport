@@ -158,81 +158,79 @@ export default function EstadisticasMaterialesView() {
     return Array.from(map.values());
   }, [cpgFiltrado]);
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <section style={{ padding: '2rem', background: '#f4f6f9', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+    <section style={{ padding: isMobile ? '1rem' : '2rem', background: '#f7f3f5', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
       
       {/* HEADER PREMIUM */}
-      <header style={{ 
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
-        borderRadius: '24px', 
-        padding: '2.5rem', 
+      <header className="network-nodes-bg" style={{ 
+        background: 'linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%)', 
+        borderRadius: isMobile ? '16px' : '24px', 
+        padding: isMobile ? '1.5rem' : '2.5rem', 
         color: '#fff',
         marginBottom: '2rem',
         display: 'flex',
-        flexWrap: 'wrap',
+        flexDirection: isMobile ? 'column' : 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         gap: '1.5rem',
-        boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)'
+        boxShadow: '0 10px 25px -5px var(--primary-glow)'
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '1.8rem' }}>📊</span>
-            <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.025em' }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? '1.8rem' : '2.2rem', fontWeight: '800', letterSpacing: '-0.025em' }}>
               Consumo de Insumos & Desgaste de Inventario
             </h1>
           </div>
-          <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: '1.05rem', fontWeight: '400' }}>
+          <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: '400' }}>
             Análisis táctico de la relación entre la gravedad de reportes y el ritmo de consumo logístico.
           </p>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <div>
-            <label style={{ fontSize: '0.9rem', fontWeight: '700', opacity: 0.9, marginRight: '8px' }}>Categoría Reporte:</label>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: '800', opacity: 0.9, textTransform: 'uppercase' }}>Categoría Reporte</label>
             <select 
+              className="minimal-select field"
               style={{ 
-                padding: '10px 20px', 
-                borderRadius: '12px', 
-                background: 'rgba(255,255,255,0.08)', 
-                color: '#fff', 
-                border: '1px solid rgba(255,255,255,0.15)', 
-                fontWeight: '600', 
-                cursor: 'pointer',
-                outline: 'none',
-                transition: 'background 0.3s'
+                minHeight: '42px', 
+                padding: '0 2.5rem 0 1rem', 
+                width: 'auto', 
+                minWidth: '180px', 
+                color: '#1e293b',
+                fontWeight: '600'
               }}
               value={categoriaFiltro} 
               onChange={(e) => setCategoriaFiltro(e.target.value)}
             >
-              <option value="todos" style={{ color: '#0f172a' }}>Todas las categorías</option>
+              <option value="todos">Todas las categorías</option>
               {categoriasUnicas.map(cat => (
-                <option key={cat} value={cat} style={{ color: '#0f172a' }}>{cat}</option>
+                <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
           </div>
 
           {categoriasMaterialesUnicas.length > 1 && (
-            <div>
-              <label style={{ fontSize: '0.9rem', fontWeight: '700', opacity: 0.9, marginRight: '8px' }}>Categoría Material:</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: '800', opacity: 0.9, textTransform: 'uppercase' }}>Categoría Material</label>
               <select 
+                className="minimal-select field"
                 style={{ 
-                  padding: '10px 20px', 
-                  borderRadius: '12px', 
-                  background: 'rgba(255,255,255,0.08)', 
-                  color: '#fff', 
-                  border: '1px solid rgba(255,255,255,0.15)', 
-                  fontWeight: '600', 
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'background 0.3s'
+                  minHeight: '42px', 
+                  padding: '0 2.5rem 0 1rem', 
+                  width: 'auto', 
+                  minWidth: '180px', 
+                  color: '#1e293b',
+                  fontWeight: '600'
                 }}
                 value={categoriaMaterialFiltro} 
                 onChange={(e) => setCategoriaMaterialFiltro(e.target.value)}
               >
-                <option value="todos" style={{ color: '#0f172a' }}>Todos los materiales</option>
+                <option value="todos">Todos los materiales</option>
                 {categoriasMaterialesUnicas.map(cat => (
-                  <option key={cat} value={cat} style={{ color: '#0f172a' }}>{cat}</option>
+                  <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
             </div>
@@ -241,18 +239,23 @@ export default function EstadisticasMaterialesView() {
           <button 
             onClick={recargar}
             style={{
-              padding: '10px 16px',
+              alignSelf: isMobile ? 'stretch' : 'flex-end',
+              height: '42px',
+              padding: '0 16px',
               borderRadius: '12px',
-              background: '#3b82f6',
-              color: '#fff',
+              background: '#fff',
+              color: 'var(--primary)',
               border: 'none',
               fontWeight: '700',
               cursor: 'pointer',
-              boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
+              boxShadow: '0 4px 6px var(--primary-glow)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             title="Recargar Métricas"
           >
-            🔄
+            🔄 Recargar
           </button>
         </div>
       </header>
@@ -350,7 +353,7 @@ export default function EstadisticasMaterialesView() {
           </div>
 
           {/* CUADRICULA DE REPORTES E INTERFACES GRAFICAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
             
             {/* PANEL 1: CPG (Consumo Promedio por Gravedad) */}
             <section style={{ background: '#fff', borderRadius: '24px', padding: '2rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.01)' }}>
@@ -574,7 +577,7 @@ export default function EstadisticasMaterialesView() {
             {empFiltrado.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: '600' }}>No hay reportes pendientes que proyectar en este filtro</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))', gap: '1.5rem' }}>
                 {empFiltrado.map(row => (
                   <article key={`${row.categoria}-${row.material_nombre}`} style={{ background: '#f8fafc', borderRadius: '18px', padding: '1.25rem', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>

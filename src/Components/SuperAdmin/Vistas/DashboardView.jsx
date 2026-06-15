@@ -50,6 +50,7 @@ export default function SuperAdminDashboardView() {
   const [editIconoProb, setEditIconoProb] = useState("");
   const [codigoGenerado, setCodigoGenerado] = useState(null);
   const [confirmConfig, setConfirmConfig] = useState(null);
+  const [entidadEdicion, setEntidadEdicion] = useState(null);
 
   const handleCrearEntidad = async (e) => {
     e.preventDefault();
@@ -92,15 +93,15 @@ export default function SuperAdminDashboardView() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
-    <section style={{ padding: isMobile ? '1rem' : '2rem', background: '#f8fafc', minHeight: '100%' }}>
+    <section style={{ padding: isMobile ? '1rem' : '2rem', background: '#f7f3f5', minHeight: '100%' }}>
       {/* Header Premium */}
-      <header style={{ 
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
+      <header className="network-nodes-bg" style={{ 
+        background: 'linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%)', 
         borderRadius: isMobile ? '16px' : '24px', 
         padding: isMobile ? '1.5rem' : '2rem', 
         color: '#fff',
         marginBottom: '2rem',
-        boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+        boxShadow: '0 10px 15px -3px var(--primary-glow)'
       }}>
         <h1 style={{ margin: 0, fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: '800' }}>Panel Super Admin</h1>
         <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: isMobile ? '0.85rem' : '1rem' }}>Gestiona entidades institucionales y el catálogo global de problemáticas urbanas.</p>
@@ -113,10 +114,10 @@ export default function SuperAdminDashboardView() {
           style={{
             flex: isMobile ? '1' : 'none',
             padding: '12px 20px', borderRadius: '12px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s',
-            background: tabActual === "entidades" ? '#2563eb' : '#fff',
+            background: tabActual === "entidades" ? 'var(--primary)' : '#fff',
             color: tabActual === "entidades" ? '#fff' : '#64748b',
-            border: tabActual === "entidades" ? '1px solid #2563eb' : '1px solid #cbd5e1',
-            boxShadow: tabActual === "entidades" ? '0 4px 6px rgba(37,99,235,0.2)' : 'none'
+            border: tabActual === "entidades" ? '1px solid var(--primary)' : '1px solid #cbd5e1',
+            boxShadow: tabActual === "entidades" ? '0 4px 6px var(--primary-glow)' : 'none'
           }}
         >
           🏢 Entidades
@@ -126,10 +127,10 @@ export default function SuperAdminDashboardView() {
           style={{
             flex: isMobile ? '1' : 'none',
             padding: '12px 20px', borderRadius: '12px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s',
-            background: tabActual === "problematicas" ? '#2563eb' : '#fff',
+            background: tabActual === "problematicas" ? 'var(--primary)' : '#fff',
             color: tabActual === "problematicas" ? '#fff' : '#64748b',
-            border: tabActual === "problematicas" ? '1px solid #2563eb' : '1px solid #cbd5e1',
-            boxShadow: tabActual === "problematicas" ? '0 4px 6px rgba(37,99,235,0.2)' : 'none'
+            border: tabActual === "problematicas" ? '1px solid var(--primary)' : '1px solid #cbd5e1',
+            boxShadow: tabActual === "problematicas" ? '0 4px 6px var(--primary-glow)' : 'none'
           }}
         >
           📋 Catálogo
@@ -139,10 +140,10 @@ export default function SuperAdminDashboardView() {
           style={{
             flex: isMobile ? '1' : 'none',
             padding: '12px 20px', borderRadius: '12px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s',
-            background: tabActual === "usuarios" ? '#2563eb' : '#fff',
+            background: tabActual === "usuarios" ? 'var(--primary)' : '#fff',
             color: tabActual === "usuarios" ? '#fff' : '#64748b',
-            border: tabActual === "usuarios" ? '1px solid #2563eb' : '1px solid #cbd5e1',
-            boxShadow: tabActual === "usuarios" ? '0 4px 6px rgba(37,99,235,0.2)' : 'none'
+            border: tabActual === "usuarios" ? '1px solid var(--primary)' : '1px solid #cbd5e1',
+            boxShadow: tabActual === "usuarios" ? '0 4px 6px var(--primary-glow)' : 'none'
           }}
         >
           👥 Moderación Usuarios
@@ -200,9 +201,9 @@ export default function SuperAdminDashboardView() {
                         onClick={() => toggleProbSelection(p.id)}
                         style={{
                           padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s',
-                          background: isSelected ? '#eff6ff' : '#fff',
-                          color: isSelected ? '#2563eb' : '#64748b',
-                          border: isSelected ? '1px solid #3b82f6' : '1px solid #cbd5e1'
+                          background: isSelected ? 'var(--primary-light)' : '#fff',
+                          color: isSelected ? 'var(--primary)' : '#64748b',
+                          border: isSelected ? '1px solid var(--primary-hover)' : '1px solid #cbd5e1'
                         }}
                       >
                         {p.icono || "📋"} {p.nombre}
@@ -217,9 +218,9 @@ export default function SuperAdminDashboardView() {
                 disabled={creando || !formCompletoEntidad}
                 style={{ 
                   marginTop: '0.5rem', padding: '14px', borderRadius: '12px', fontWeight: '800', fontSize: '1rem', border: 'none', transition: 'all 0.2s',
-                  background: (!creando && formCompletoEntidad) ? '#2563eb' : '#cbd5e1',
+                  background: (!creando && formCompletoEntidad) ? 'var(--primary)' : '#cbd5e1',
                   color: '#fff', cursor: (!creando && formCompletoEntidad) ? 'pointer' : 'not-allowed',
-                  boxShadow: (!creando && formCompletoEntidad) ? '0 4px 6px rgba(37,99,235,0.2)' : 'none'
+                  boxShadow: (!creando && formCompletoEntidad) ? '0 4px 6px var(--primary-glow)' : 'none'
                 }} 
               >
                 {creando ? "Generando..." : "Crear Entidad y Generar Código"}
@@ -240,8 +241,7 @@ export default function SuperAdminDashboardView() {
                       <div style={{ position: 'absolute', top: isMobile ? '1rem' : '1.5rem', right: isMobile ? '1rem' : '1.5rem', display: 'flex', gap: '8px' }}>
                         <button 
                           onClick={() => {
-                            const newName = window.prompt("Nuevo nombre:", entidad.nombre);
-                            if(newName) actualizarEntidad(entidad.id, { nombre: newName });
+                            setEntidadEdicion({ id: entidad.id, nombre: entidad.nombre });
                           }}
                           style={{ background: '#f1f5f9', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#475569', cursor: 'pointer' }}
                         >{isMobile ? '✏️' : '✏️ Editar'}</button>
@@ -631,9 +631,9 @@ export default function SuperAdminDashboardView() {
                       flex: 1, padding: '6px', borderRadius: '8px', fontSize: '0.75rem',
                       fontWeight: '700', textTransform: 'capitalize', cursor: 'pointer',
                       border: '1px solid',
-                      borderColor: filtroCiudadano === filtro ? '#2563eb' : '#cbd5e1',
-                      background: filtroCiudadano === filtro ? '#eff6ff' : '#fff',
-                      color: filtroCiudadano === filtro ? '#2563eb' : '#64748b'
+                      borderColor: filtroCiudadano === filtro ? 'var(--primary)' : '#cbd5e1',
+                      background: filtroCiudadano === filtro ? 'var(--primary-light)' : '#fff',
+                      color: filtroCiudadano === filtro ? 'var(--primary)' : '#64748b'
                     }}
                   >
                     {filtro}
@@ -1038,6 +1038,116 @@ export default function SuperAdminDashboardView() {
                 }}
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edición de Entidad */}
+      {entidadEdicion && (
+        <div
+          onClick={() => setEntidadEdicion(null)}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 10000, 
+            padding: '1rem', 
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff', 
+              padding: '2rem', 
+              borderRadius: '24px', 
+              maxWidth: '440px', 
+              width: '100%', 
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
+              border: '1px solid #e2e8f0', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1.25rem'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.2rem', fontWeight: '800' }}>
+                ✏️ Editar Nombre de Entidad
+              </h3>
+              <button
+                onClick={() => setEntidadEdicion(null)}
+                style={{
+                  background: '#f1f5f9', border: 'none', color: '#475569',
+                  borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer',
+                  fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}
+              >✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: '700', color: '#64748b' }}>
+                Nuevo Nombre:
+              </label>
+              <input
+                type="text"
+                value={entidadEdicion.nombre}
+                onChange={(e) => setEntidadEdicion({ ...entidadEdicion, nombre: e.target.value })}
+                style={{
+                  width: '100%', 
+                  padding: '12px', 
+                  borderRadius: '10px', 
+                  border: '1px solid #cbd5e1', 
+                  fontSize: '0.95rem',
+                  outline: 'none',
+                  fontWeight: '600',
+                  color: '#1e293b'
+                }}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setEntidadEdicion(null)}
+                style={{ 
+                  background: '#f1f5f9', 
+                  color: '#475569', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s' 
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (entidadEdicion.nombre.trim()) {
+                    await actualizarEntidad(entidadEdicion.id, { nombre: entidadEdicion.nombre.trim() });
+                    setEntidadEdicion(null);
+                  }
+                }}
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 6px var(--primary-glow)'
+                }}
+              >
+                Guardar Cambios
               </button>
             </div>
           </div>

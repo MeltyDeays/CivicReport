@@ -44,11 +44,8 @@ export default function MapaCalorView() {
       </header>
 
       {/* ─── Barra de Filtros ─── */}
-      <div className="filter-bar-row" style={{ 
-        display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', 
-        background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0',
-        marginBottom: '24px', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        position: 'relative', zIndex: 1001
+      <div className="toolbar-premium" style={{ 
+        position: 'relative', zIndex: 10, marginBottom: '24px'
       }}>
         <div style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', marginRight: '4px' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,7 +58,7 @@ export default function MapaCalorView() {
             <button key={t} onClick={() => vm.setActiveType(t)} style={{
               padding: '8px 20px', borderRadius: '8px', border: 'none', fontSize: '14px',
               fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s',
-              background: vm.activeType === t ? '#2563eb' : 'transparent',
+              background: vm.activeType === t ? 'var(--primary)' : 'transparent',
               color: vm.activeType === t ? '#fff' : '#64748b'
             }}>{t}</button>
           ))}
@@ -86,9 +83,9 @@ export default function MapaCalorView() {
         )}
 
         {/* Selector de Urgencia con Colores */}
-        <div className="custom-urgency-dropdown" style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+        <div className="custom-urgency-dropdown" style={{ position: 'relative', zIndex: 20 }} onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={() => vm.setShowUrgencyMenu(!vm.showUrgencyMenu)}
-            className="minimal-select" style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}>
+            className="field minimal-select" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textAlign: 'left', width: 'auto', minWidth: '170px', minHeight: '42px', padding: '0 2.5rem 0 1rem' }}>
             {vm.currentUrgencyObj.color !== 'transparent' && (
               <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: vm.currentUrgencyObj.color, display: 'inline-block', boxShadow: `0 0 8px ${vm.currentUrgencyObj.color}66` }}></span>
             )}
@@ -99,16 +96,16 @@ export default function MapaCalorView() {
             <div style={{
               position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', minWidth: '180px',
               background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '8px', zIndex: 2000
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '8px', zIndex: 30
             }}>
               {vm.URGENCY_OPTIONS.map((opt) => (
                 <button key={opt.value} onClick={() => { vm.setSelectedUrgency(opt.value); vm.setShowUrgencyMenu(false); }}
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: '8px', border: 'none',
-                    background: vm.selectedUrgency === opt.value ? '#eff6ff' : 'transparent',
+                    background: vm.selectedUrgency === opt.value ? 'var(--primary-light)' : 'transparent',
                     display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
                     fontSize: '14px', fontWeight: '600',
-                    color: vm.selectedUrgency === opt.value ? '#2563eb' : '#475569',
+                    color: vm.selectedUrgency === opt.value ? 'var(--primary)' : '#475569',
                     textAlign: 'left', transition: 'all 0.2s'
                   }}>
                   <span style={{ 
@@ -130,9 +127,9 @@ export default function MapaCalorView() {
       
       {/* ─── Mapa ─── */}
       <div className="map-view-container" style={{ 
-        height: '600px', width: '100%', borderRadius: '24px', overflow: 'hidden', 
+        height: 'min(60vh, 600px)', width: '100%', borderRadius: '24px', overflow: 'hidden', 
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        border: '1px solid #e2e8f0', position: 'relative'
+        border: '1px solid #e2e8f0', position: 'relative', zIndex: 1
       }}>
         <MapContainer center={vm.NICARAGUA_CENTER} zoom={7} style={{ height: "100%", width: "100%" }}>
           <TileLayer
@@ -168,7 +165,7 @@ export default function MapaCalorView() {
         <div style={{
           position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(255, 255, 255, 0.95)', padding: '8px 20px', borderRadius: '20px',
-          display: 'flex', gap: '20px', fontSize: '12px', fontWeight: '600', zIndex: 1000,
+          display: 'flex', gap: '20px', fontSize: '12px', fontWeight: '600', zIndex: 5,
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)'
         }}>
           {[{c:'#ef4444',l:'Crítica'},{c:'#f97316',l:'Alta'},{c:'#facc15',l:'Media'},{c:'#22c55e',l:'Baja'}].map(i => (

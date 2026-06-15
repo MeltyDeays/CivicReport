@@ -21,14 +21,14 @@ const AVATAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#
 
 export default function AdminEntidadKanbanView() {
   const vm = useKanbanAdmin();
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [cierreInfo, setCierreInfo] = useState(null);
+  const [cierreNotas, setCierreNotas] = useState("");
 
   const alMover = (id, destino) => {
     if (destino === 2) {
-      const notas = prompt(
-        "Notas de Cierre de Reparación:\nDetalla los materiales utilizados (ej: 'Se usaron 3 sacos de asfalto caliente'):"
-      );
-      if (notas === null) return;
-      vm.manejarMover(id, destino, notas);
+      setCierreNotas("");
+      setCierreInfo({ id, destino });
     } else {
       vm.manejarMover(id, destino);
     }
@@ -44,24 +44,31 @@ export default function AdminEntidadKanbanView() {
   const totalActivas = vm.tareasActivas.length;
 
   return (
-    <section style={{ padding: '28px 32px', background: '#f1f5f9', minHeight: '100%' }}>
+    <section style={{ padding: isMobile ? '12px 16px' : '28px 32px', background: '#f1f5f9', minHeight: '100%', paddingBottom: '4rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row', 
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'stretch' : 'flex-start', 
+        marginBottom: '16px',
+        gap: isMobile ? '8px' : '0'
+      }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '22px' : '28px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>
             Tablero de Proyectos
           </h1>
-          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '14px', fontWeight: '500' }}>
+          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: isMobile ? '12px' : '14px', fontWeight: '500' }}>
             Arrastra las tarjetas entre columnas para actualizar el estado del proyecto
           </p>
         </div>
-        <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', marginTop: '8px' }}>
+        <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', marginTop: isMobile ? '4px' : '8px' }}>
           {totalActivas} proyectos totales
         </span>
       </div>
 
       {/* Summary dots */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? '10px 16px' : '20px', marginBottom: '20px' }}>
         {agrupado.map((col) => {
           const style = COLUMN_STYLES[col.id] || COLUMN_STYLES[0];
           return (
@@ -74,18 +81,26 @@ export default function AdminEntidadKanbanView() {
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: 'flex', gap: '10px', marginBottom: '20px', padding: '10px 14px',
-        background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)', alignItems: 'center'
+      <div className="toolbar-premium" style={{
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: '10px', 
+        marginBottom: '20px', 
+        padding: '12px 14px',
+        background: '#fff', 
+        borderRadius: '12px', 
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)', 
+        alignItems: isMobile ? 'stretch' : 'center'
       }}>
-        <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '600' }}>Filtrar:</span>
+        <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '600', display: isMobile ? 'none' : 'inline' }}>Filtrar:</span>
         <select
           value={vm.filtroDept}
           onChange={(e) => vm.cambiarDepartamento(e.target.value)}
           style={{
             padding: '7px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
-            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px'
+            background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px',
+            width: isMobile ? '100%' : 'auto'
           }}
         >
           <option value="Todos">Todos los departamentos</option>
@@ -99,7 +114,8 @@ export default function AdminEntidadKanbanView() {
             onChange={(e) => vm.setFiltroCity(e.target.value)}
             style={{
               padding: '7px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
-              background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px'
+              background: '#f8fafc', fontWeight: '600', color: '#475569', fontSize: '13px',
+              width: isMobile ? '100%' : 'auto'
             }}
           >
             <option value="Todos">Todos los municipios</option>
@@ -109,14 +125,16 @@ export default function AdminEntidadKanbanView() {
           </select>
         )}
 
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: isMobile ? '0' : 'auto', width: isMobile ? '100%' : 'auto' }}>
           <button
             onClick={() => vm.setMostrarHistorial(true)}
             style={{
               background: '#0f172a', color: '#fff', border: 'none',
               padding: '8px 16px', borderRadius: '10px', fontWeight: '700',
               fontSize: '12px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '6px'
+              display: 'flex', alignItems: 'center', gap: '6px',
+              width: isMobile ? '100%' : 'auto',
+              justifyContent: 'center'
             }}
           >
             📂 Historial ({vm.historial.length})
@@ -460,6 +478,122 @@ export default function AdminEntidadKanbanView() {
       )}
 
       {vm.tareaSeleccionada && <ModalAsignacion vm={vm} />}
+
+      {/* Modal Premium de Notas de Cierre (para cuando se marca completado) */}
+      {cierreInfo && (
+        <div
+          onClick={() => setCierreInfo(null)}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 10000, 
+            padding: '1rem', 
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff', 
+              padding: '2rem', 
+              borderRadius: '24px', 
+              maxWidth: '460px', 
+              width: '100%', 
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
+              border: '1px solid #e2e8f0', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1.25rem'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.2rem', fontWeight: '800' }}>
+                ✅ Completar Reparación
+              </h3>
+              <button
+                onClick={() => setCierreInfo(null)}
+                style={{
+                  background: '#f1f5f9', border: 'none', color: '#475569',
+                  borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer',
+                  fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}
+              >✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                Detalla los materiales utilizados y los trabajos realizados para cerrar el proyecto (ej: <i>Se usaron 3 sacos de asfalto caliente y se selló la grieta principal</i>).
+              </p>
+              <textarea
+                value={cierreNotas}
+                onChange={(e) => setCierreNotas(e.target.value)}
+                placeholder="Escribe las notas de cierre aquí..."
+                rows={4}
+                style={{
+                  width: '100%', 
+                  padding: '12px', 
+                  borderRadius: '10px', 
+                  border: '1px solid #cbd5e1', 
+                  fontSize: '0.95rem',
+                  outline: 'none',
+                  fontWeight: '500',
+                  color: '#1e293b',
+                  resize: 'none',
+                  marginTop: '8px',
+                  fontFamily: 'inherit'
+                }}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setCierreInfo(null)}
+                style={{ 
+                  background: '#f1f5f9', 
+                  color: '#475569', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s' 
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (cierreNotas.trim()) {
+                    vm.manejarMover(cierreInfo.id, cierreInfo.destino, cierreNotas.trim());
+                    setCierreInfo(null);
+                  } else {
+                    alert("Por favor ingresa detalles sobre el trabajo realizado antes de cerrar.");
+                  }
+                }}
+                style={{
+                  background: '#10b981',
+                  color: '#fff', 
+                  border: 'none', 
+                  padding: '10px 18px', 
+                  borderRadius: '10px', 
+                  fontWeight: '700', 
+                  fontSize: '0.875rem', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 6px rgba(16,185,129,0.2)'
+                }}
+              >
+                Completar Proyecto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

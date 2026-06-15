@@ -40,16 +40,25 @@ export default function CiudadanoSugerenciasView() {
     await crear(payload);
   };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <section>
+    <section style={{ paddingBottom: '3rem' }}>
       {/* Header con Banner Premium */}
       <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between', 
+          alignItems: isMobile ? 'stretch' : 'center', 
+          marginBottom: '1.5rem',
+          gap: '1rem' 
+        }}>
           <div>
-            <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>Sugerencias y Reformas</h1>
-            <p style={{ color: '#64748b', marginTop: '4px', fontSize: '1rem' }}>Firma las propuestas ciudadanas que más te importen. Tu firma cuenta.</p>
+            <h1 style={{ fontSize: isMobile ? '1.6rem' : '2rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>Sugerencias y Reformas</h1>
+            <p style={{ color: '#64748b', marginTop: '4px', fontSize: isMobile ? '0.9rem' : '1rem' }}>Firma las propuestas ciudadanas que más te importen. Tu firma cuenta.</p>
           </div>
-          <button onClick={() => setModalAbierto(true)} className="primary-btn" style={{ height: '48px', padding: '0 24px', fontWeight: '700' }}>
+          <button onClick={() => setModalAbierto(true)} className="primary-btn" style={{ height: '48px', padding: '0 24px', fontWeight: '700', width: isMobile ? '100%' : 'auto' }}>
             📝 Nueva Propuesta
           </button>
         </div>
@@ -59,7 +68,7 @@ export default function CiudadanoSugerenciasView() {
           <div style={{ 
             background: 'linear-gradient(135deg, #1f64ff 0%, #1248c7 100%)', 
             borderRadius: '24px', 
-            padding: '2.5rem', 
+            padding: isMobile ? '1.5rem' : '2.5rem', 
             color: '#fff',
             position: 'relative',
             overflow: 'hidden',
@@ -73,11 +82,11 @@ export default function CiudadanoSugerenciasView() {
                   Propuesta más apoyada {propuestaDestacada.tipo === 'reforma' ? '(Reforma)' : '(Sugerencia)'}
                 </span>
               </div>
-              <h2 style={{ fontSize: '1.8rem', margin: '0 0 12px', fontWeight: '800' }}>{propuestaDestacada.titulo}</h2>
-              <p style={{ maxWidth: '800px', opacity: 0.9, lineHeight: 1.6, marginBottom: '2rem', fontSize: '1.05rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+              <h2 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', margin: '0 0 12px', fontWeight: '800' }}>{propuestaDestacada.titulo}</h2>
+              <p style={{ maxWidth: '800px', opacity: 0.9, lineHeight: 1.6, marginBottom: '2rem', fontSize: isMobile ? '0.95rem' : '1.05rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                 {propuestaDestacada.descripcion}
               </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
                   <span>📍</span>
                   <span>{propuestaDestacada.departamento}, {propuestaDestacada.municipio || propuestaDestacada.departamento}</span>
@@ -90,7 +99,8 @@ export default function CiudadanoSugerenciasView() {
                   backdropFilter: 'blur(10px)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  justifyContent: 'center'
                 }}>
                   🖋️ {propuestaDestacada.firmas?.toLocaleString() || 0} firmas
                 </div>
@@ -103,48 +113,60 @@ export default function CiudadanoSugerenciasView() {
       </div>
 
       {/* Mini Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(145px, 100%), 1fr))', 
+        gap: isMobile ? '0.85rem' : '1.5rem', 
+        marginBottom: '2.5rem' 
+      }}>
+        <div style={{ background: '#fff', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>💡</div>
-          <div style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>{stats.sugerencias}</div>
-          <div style={{ color: '#64748b', fontWeight: '600' }}>Sugerencias</div>
+          <div style={{ fontSize: isMobile ? '1.5rem' : '2.2rem', fontWeight: '800', color: '#0f172a' }}>{stats.sugerencias}</div>
+          <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.85rem' }}>Sugerencias</div>
         </div>
-        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
+        <div style={{ background: '#fff', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>📄</div>
-          <div style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>{stats.reformas}</div>
-          <div style={{ color: '#64748b', fontWeight: '600' }}>Reformas</div>
+          <div style={{ fontSize: isMobile ? '1.5rem' : '2.2rem', fontWeight: '800', color: '#0f172a' }}>{stats.reformas}</div>
+          <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.85rem' }}>Reformas</div>
         </div>
-        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
+        <div style={{ background: '#fff', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '20px', border: '1px solid #eef2f6', textAlign: 'center' }}>
           <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>🖋️</div>
-          <div style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>{stats.firmasTotales.toLocaleString()}</div>
-          <div style={{ color: '#64748b', fontWeight: '600' }}>Firmas Totales</div>
+          <div style={{ fontSize: isMobile ? '1.5rem' : '2.2rem', fontWeight: '800', color: '#0f172a' }}>{stats.firmasTotales.toLocaleString()}</div>
+          <div style={{ color: '#64748b', fontWeight: '600', fontSize: '0.85rem' }}>Firmas Totales</div>
         </div>
       </div>
 
       {/* Toolbar Filtrado */}
-      <div style={{ 
-        background: '#fff', 
-        padding: '1rem', 
-        borderRadius: '16px', 
-        border: '1px solid #eef2f6', 
-        display: 'flex', 
-        gap: '1rem',
-        alignItems: 'center',
-        marginBottom: '2rem'
+      <div className="toolbar-premium" style={{ 
+        marginBottom: '2rem',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'center',
+        gap: '1rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontWeight: '600', borderRight: '1px solid #e2e8f0', paddingRight: '1rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          color: '#64748b', 
+          fontWeight: '600', 
+          borderRight: isMobile ? 'none' : '1px solid #e2e8f0', 
+          borderBottom: isMobile ? '1px solid #e2e8f0' : 'none',
+          paddingRight: isMobile ? '0' : '1rem',
+          paddingBottom: isMobile ? '0.5rem' : '0'
+        }}>
           <span>📋</span> Filtrar:
         </div>
-        <select className="minimal-select" style={{ width: '220px' }} value={filtroDep} onChange={(e) => setFiltroDep(e.target.value)}>
+        <select className="minimal-select" style={{ width: isMobile ? '100%' : '220px' }} value={filtroDep} onChange={(e) => setFiltroDep(e.target.value)}>
           <option value="todos">Todos los departamentos</option>
           {Object.keys(DEPARTAMENTOS_NICARAGUA).map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select className="minimal-select" style={{ width: '180px' }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
+        <select className="minimal-select" style={{ width: isMobile ? '100%' : '180px' }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
           <option value="todos">Todos los tipos</option>
           <option value="sugerencia">Sugerencias</option>
           <option value="reforma">Reformas</option>
         </select>
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative', width: '100%' }}>
           <input 
             style={{ width: '100%', height: '40px', paddingLeft: '32px', borderRadius: '10px', border: '1px solid #e2e8f0' }} 
             placeholder="Buscar por título o contenido..."
@@ -156,7 +178,7 @@ export default function CiudadanoSugerenciasView() {
       </div>
 
       {/* Grid de Propuestas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.5rem' }}>
         {itemsFiltrados.map((item) => (
           <article key={item.id} style={{ 
             background: '#fff', 

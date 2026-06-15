@@ -131,18 +131,20 @@ export default function InventarioView() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [materiales]);
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <section style={{ padding: '2rem', background: '#f4f6f9', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ 
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', 
-        borderRadius: '24px', 
-        padding: '2.5rem', 
+    <section style={{ padding: isMobile ? '1rem' : '2rem', background: '#f7f3f5', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+      <header className="network-nodes-bg" style={{ 
+        background: 'linear-gradient(135deg, var(--dark-sidebar-start) 0%, var(--primary) 100%)', 
+        borderRadius: isMobile ? '16px' : '24px', 
+        padding: isMobile ? '1.5rem' : '2.5rem', 
         color: '#fff',
         marginBottom: '2.5rem',
-        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+        boxShadow: '0 20px 25px -5px var(--primary-glow)'
       }}>
-        <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800' }}>Centro Logístico</h1>
-        <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: '1.1rem' }}>Administra el stock de materiales y suministros de tu entidad.</p>
+        <h1 style={{ margin: 0, fontSize: isMobile ? '1.8rem' : '2.2rem', fontWeight: '800' }}>Centro Logístico</h1>
+        <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: isMobile ? '0.95rem' : '1.1rem' }}>Administra el stock de materiales y suministros de tu entidad.</p>
       </header>
 
       {feedback && (
@@ -151,7 +153,7 @@ export default function InventarioView() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
         {/* Registro de Entrada */}
         <form onSubmit={guardar} style={{ background: '#fff', padding: '2rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
           <h3 style={{ margin: '0 0 1.5rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -160,7 +162,7 @@ export default function InventarioView() {
           
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Material / Herramienta</label>
-            <select style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: '600' }} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
+            <select className="minimal-select field" style={{ fontWeight: '600' }} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
               <option value="">Seleccionar del catálogo...</option>
               {materialesAgrupados.map(([cat, items]) => (
                 <optgroup key={cat} label={`${CAT_ICONOS[cat] || '📦'} ${cat}`}>
@@ -175,15 +177,15 @@ export default function InventarioView() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Cantidad Actual</label>
-              <input type="number" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc' }} value={cantidad} onChange={(e) => setCantidad(e.target.value)} placeholder="0.00" />
+              <input type="number" className="field" style={{ minHeight: '48px' }} value={cantidad} onChange={(e) => setCantidad(e.target.value)} placeholder="0.00" />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Stock de Alerta</label>
-              <input type="number" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc' }} value={stockMinimo} onChange={(e) => setStockMinimo(e.target.value)} placeholder="10" />
+              <input type="number" className="field" style={{ minHeight: '48px' }} value={stockMinimo} onChange={(e) => setStockMinimo(e.target.value)} placeholder="10" />
             </div>
           </div>
 
-          <button type="submit" disabled={cargando || !entidadId} style={{ width: '100%', background: '#2563eb', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' }}>
+          <button type="submit" disabled={cargando || !entidadId} style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 6px var(--primary-glow)' }}>
             {cargando ? "Procesando..." : "Registrar Cambios"}
           </button>
         </form>
@@ -196,7 +198,7 @@ export default function InventarioView() {
           
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '8px', textTransform: 'uppercase' }}>Categoría</label>
-            <select style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontWeight: '600' }} value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)}>
+            <select className="minimal-select field" style={{ fontWeight: '600' }} value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)}>
               {CATEGORIAS_MATERIAL.map(cat => (
                 <option key={cat} value={cat}>{CAT_ICONOS[cat] || '📦'} {cat}</option>
               ))}
@@ -205,15 +207,15 @@ export default function InventarioView() {
 
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '8px', textTransform: 'uppercase' }}>Nombre del Material</label>
-            <input style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff' }} value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} placeholder="Ej: Pintura Vial Reflectante" />
+            <input className="field" style={{ minHeight: '48px' }} value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} placeholder="Ej: Pintura Vial Reflectante" />
           </div>
 
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '8px', textTransform: 'uppercase' }}>Unidad</label>
-            <input style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff' }} value={nuevaUnidad} onChange={(e) => setNuevaUnidad(e.target.value)} placeholder="metro, litro, kg, unidad..." />
+            <input className="field" style={{ minHeight: '48px' }} value={nuevaUnidad} onChange={(e) => setNuevaUnidad(e.target.value)} placeholder="metro, litro, kg, unidad..." />
           </div>
 
-          <button type="submit" disabled={creando} style={{ width: '100%', background: '#1e293b', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' }}>
+          <button type="submit" disabled={creando} style={{ width: '100%', background: 'var(--primary)', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 6px var(--primary-glow)' }}>
             {creando ? "Creando..." : "+ Crear Nuevo Insumo"}
           </button>
         </form>
@@ -229,8 +231,8 @@ export default function InventarioView() {
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
-              border: filtroCategoria === "todos" ? '2px solid #1e293b' : '1px solid #e2e8f0',
-              background: filtroCategoria === "todos" ? '#1e293b' : '#fff',
+              border: filtroCategoria === "todos" ? '2px solid var(--primary)' : '1px solid #e2e8f0',
+              background: filtroCategoria === "todos" ? 'var(--primary)' : '#fff',
               color: filtroCategoria === "todos" ? '#fff' : '#64748b',
               fontWeight: '700',
               fontSize: '0.8rem',
@@ -279,7 +281,7 @@ export default function InventarioView() {
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: CAT_COLORES[cat] || '#475569' }}>{cat}</h3>
               <span style={{ fontSize: '0.75rem', fontWeight: '700', background: '#f1f5f9', padding: '4px 10px', borderRadius: '8px', color: '#64748b' }}>{items.length} {items.length === 1 ? 'material' : 'materiales'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))', gap: '1.5rem' }}>
               {items.map((row) => {
                 const esCritico = row.cantidad <= row.stock_minimo;
                 return (

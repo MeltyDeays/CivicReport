@@ -33,6 +33,7 @@ export default function VistaPerfil() {
   const [modalBaja, setModalBaja] = useState(false);
   const [motivoBaja, setMotivoBaja] = useState("");
   const [procesandoBaja, setProcesandoBaja] = useState(false);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   const mostrarToast = (msg, tipo = "ok") => {
     setToast({ msg, tipo });
@@ -267,70 +268,207 @@ export default function VistaPerfil() {
       {/* Historial de mis Reportes */}
       {perfil?.rol === 'ciudadano' && (() => {
         const misReportes = reportes.filter(r => r.id_ciudadano === sesion?.user?.id);
+        const reportesPorPagina = 5;
+        const totalPaginas = Math.ceil(misReportes.length / reportesPorPagina);
+        const indexUltimo = paginaActual * reportesPorPagina;
+        const indexPrimer = indexUltimo - reportesPorPagina;
+        const reportesPaginados = misReportes.slice(indexPrimer, indexUltimo);
+
         return (
           <div style={{
-            background: "#fff", borderRadius: 24, padding: "32px", marginTop: 24,
-            border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.04)"
+            background: "#f8fafc", 
+            borderRadius: "24px", 
+            padding: "28px", 
+            marginTop: "24px",
+            border: "1px solid #e2e8f0", 
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.02)"
           }}>
-            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 8 }}>
-              📂 Historial de mis Reportes ({misReportes.length})
-            </h2>
-            <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748b", lineHeight: 1.6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 8 }}>
+                📂 Historial de mis Reportes
+              </h2>
+              <span style={{ 
+                background: 'var(--primary)', 
+                color: '#fff', 
+                fontSize: '12px', 
+                fontWeight: '800', 
+                padding: '4px 10px', 
+                borderRadius: '20px',
+                boxShadow: '0 4px 10px rgba(122, 24, 53, 0.2)'
+              }}>
+                {misReportes.length} Total
+              </span>
+            </div>
+            <p style={{ margin: "0 0 24px", fontSize: 13.5, color: "#64748b", lineHeight: 1.5 }}>
               Aquí puedes ver el estado actual de todas tus denuncias, incluyendo las resueltas y en espera de atención.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {misReportes.length > 0 ? (
-                misReportes.map(rep => {
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {reportesPaginados.length > 0 ? (
+                reportesPaginados.map(rep => {
                   const badgeColor = 
-                    rep.estado === 'completado' ? { bg: '#dcfce7', text: '#15803d', label: 'Completado' } :
-                    rep.estado === 'en_reparacion' ? { bg: '#eff6ff', text: '#1d4ed8', label: 'En Progreso' } :
-                    rep.estado === 'rechazado' ? { bg: '#fee2e2', text: '#b91c1c', label: 'Rechazado' } :
-                    { bg: '#f1f5f9', text: '#475569', label: 'Pendiente' };
+                    rep.estado === 'completado' ? { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0', label: 'Completado' } :
+                    rep.estado === 'en_reparacion' ? { bg: '#eff6ff', text: '#1d4ed8', border: '#dbeafe', label: 'En Progreso' } :
+                    rep.estado === 'rechazado' ? { bg: '#fee2e2', text: '#b91c1c', border: '#fecaca', label: 'Rechazado' } :
+                    { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0', label: 'Pendiente' };
 
                   return (
                     <div
                       key={rep.id}
                       onClick={() => setReporteSeleccionado(rep)}
                       style={{
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                        background: "#f8fafc", padding: "16px 20px", borderRadius: 16,
-                        border: "1px solid #f1f5f9", cursor: "pointer", transition: "transform 0.2s"
+                        display: "flex", 
+                        flexDirection: "column",
+                        background: "#ffffff", 
+                        padding: "16px", 
+                        borderRadius: "16px",
+                        border: "1px solid #e2e8f0",
+                        borderLeft: `4px solid ${badgeColor.text}`,
+                        cursor: "pointer", 
+                        boxShadow: "0 4px 6px -1px rgba(15, 23, 42, 0.03)",
+                        transition: "all 0.2s ease",
+                        gap: "10px"
                       }}
-                      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                      onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(15, 23, 42, 0.06)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(15, 23, 42, 0.03)';
+                      }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span style={{ fontSize: "1.5rem" }}>
+                      {/* Fila superior: Icono y Título */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: '#f1f5f9',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.1rem',
+                          flexShrink: 0
+                        }}>
                           {rep.problematica?.icono || ({ Bache: '🕳️', Semaforo: '🚦', Drenaje: '💧', Alumbrado: '💡', Puente: '🌉', Otro: '📋' }[rep.categoria] || '📋')}
-                        </span>
-                        <div>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: "#1e293b", lineHeight: '1.35', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {rep.titulo}
                           </h4>
-                          <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                            📍 {rep.direccion}, {rep.municipio}
-                          </span>
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
+                      {/* Fila del medio: Dirección */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '12.5px', paddingLeft: '2px' }}>
+                        <span style={{ fontSize: '13px', flexShrink: 0 }}>📍</span>
+                        <span style={{ fontWeight: '600', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {rep.direccion || 'Dirección pendiente'}, {rep.municipio}
+                        </span>
+                      </div>
+
+                      {/* Fila inferior: Estado y Flecha de detalles */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
                         <span style={{
-                          padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-                          background: badgeColor.bg, color: badgeColor.text, textTransform: "uppercase"
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: "4px 10px", 
+                          borderRadius: "20px", 
+                          fontSize: "10px", 
+                          fontWeight: "800",
+                          letterSpacing: "0.5px",
+                          background: badgeColor.bg, 
+                          color: badgeColor.text, 
+                          textTransform: "uppercase",
+                          border: `1px solid ${badgeColor.border}`
                         }}>
+                          <span style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            background: badgeColor.text,
+                            display: 'inline-block'
+                          }} />
                           {badgeColor.label}
                         </span>
-                        <span style={{ color: "#cbd5e1" }}>➔</span>
+                        <span style={{ fontSize: '12.5px', color: 'var(--primary)', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          Detalles <span style={{ fontSize: '14px', lineHeight: 1 }}>›</span>
+                        </span>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div style={{ textAlign: "center", padding: "2rem", background: "#f8fafc", borderRadius: 16, border: "1px dashed #cbd5e1" }}>
+                <div style={{ textAlign: "center", padding: "2rem", background: "#ffffff", borderRadius: 16, border: "1px dashed #cbd5e1" }}>
                   <p style={{ margin: 0, color: "#64748b", fontWeight: 600 }}>Aún no has creado ningún reporte.</p>
                 </div>
               )}
             </div>
+
+            {totalPaginas > 1 && (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginTop: '24px', 
+                paddingTop: '20px', 
+                borderTop: '1px solid #e2e8f0',
+                gap: '8px'
+              }}>
+                <button 
+                  disabled={paginaActual === 1}
+                  onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
+                  style={{
+                    flex: 1,
+                    maxWidth: '100px',
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e1',
+                    background: paginaActual === 1 ? '#f1f5f9' : '#fff',
+                    color: paginaActual === 1 ? '#94a3b8' : '#475569',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: paginaActual === 1 ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                    boxShadow: paginaActual === 1 ? 'none' : '0 2px 4px rgba(0,0,0,0.02)'
+                  }}
+                  onMouseOver={(e) => paginaActual !== 1 && (e.currentTarget.style.borderColor = 'var(--primary)', e.currentTarget.style.color = 'var(--primary)')}
+                  onMouseOut={(e) => paginaActual !== 1 && (e.currentTarget.style.borderColor = '#cbd5e1', e.currentTarget.style.color = '#475569')}
+                >
+                  ← Ant.
+                </button>
+                <span style={{ fontSize: '13px', fontWeight: '800', color: '#64748b', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                  <strong style={{ color: '#1e293b' }}>{paginaActual}</strong> / {totalPaginas}
+                </span>
+                <button 
+                  disabled={paginaActual === totalPaginas}
+                  onClick={() => setPaginaActual(p => Math.min(totalPaginas, p + 1))}
+                  style={{
+                    flex: 1,
+                    maxWidth: '100px',
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e1',
+                    background: paginaActual === totalPaginas ? '#f1f5f9' : '#fff',
+                    color: paginaActual === totalPaginas ? '#94a3b8' : '#475569',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: paginaActual === totalPaginas ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                    boxShadow: paginaActual === totalPaginas ? 'none' : '0 2px 4px rgba(0,0,0,0.02)'
+                  }}
+                  onMouseOver={(e) => paginaActual !== totalPaginas && (e.currentTarget.style.borderColor = 'var(--primary)', e.currentTarget.style.color = 'var(--primary)')}
+                  onMouseOut={(e) => paginaActual !== totalPaginas && (e.currentTarget.style.borderColor = '#cbd5e1', e.currentTarget.style.color = '#475569')}
+                >
+                  Sig. →
+                </button>
+              </div>
+            )}
           </div>
         );
       })()}
