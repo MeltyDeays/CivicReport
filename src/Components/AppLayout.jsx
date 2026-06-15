@@ -16,16 +16,50 @@ const enlacesAdmin = [
 
 const enlacesSuperAdmin = [{ to: "/super/dashboard", label: "Dashboard", icon: "📊" }];
 
-
+const IsotipoLogo = ({ color = "var(--primary)" }) => (
+  <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <circle cx="50" cy="50" r="44" stroke="var(--accent-gold)" strokeWidth="2.5" strokeDasharray="3 3" opacity="0.5"/>
+    <line x1="30" y1="30" x2="50" y2="18" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="50" y1="18" x2="70" y2="30" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="70" y1="30" x2="82" y2="50" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="82" y1="50" x2="70" y2="70" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="70" y1="70" x2="50" y2="82" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="50" y1="82" x2="30" y2="70" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="30" y1="70" x2="18" y2="50" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="18" y1="50" x2="30" y2="30" stroke={color} strokeWidth="2" opacity="0.7"/>
+    <line x1="30" y1="30" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="50" y1="18" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="70" y1="30" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="82" y1="50" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="70" y1="70" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="50" y1="82" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="30" y1="70" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <line x1="18" y1="50" x2="50" y2="50" stroke="var(--accent-gold)" strokeWidth="2" opacity="0.8"/>
+    <circle cx="50" cy="50" r="5" fill={color}/>
+    <circle cx="30" cy="30" r="4" fill="var(--accent-gold)"/>
+    <circle cx="50" cy="18" r="4" fill={color}/>
+    <circle cx="70" cy="30" r="4" fill="var(--accent-gold)"/>
+    <circle cx="82" cy="50" r="4" fill={color}/>
+    <circle cx="70" cy="70" r="4" fill="var(--accent-gold)"/>
+    <circle cx="50" cy="82" r="4" fill={color}/>
+    <circle cx="30" cy="70" r="4" fill="var(--accent-gold)"/>
+    <circle cx="18" cy="50" r="4" fill={color}/>
+  </svg>
+);
 
 export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrarSesion, perfil }) {
   const [cerrando, setCerrando] = useState(false);
   const [esEncargado, setEsEncargado] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const esCiudadano = rol === "ciudadano";
   const esSuperAdmin = rol === "super_admin";
   const esTecnico = rol === "tecnico";
 
+  // Cerrar sidebar al cambiar de ruta en móviles
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   // Verificar si el técnico es encargado de alguna cuadrilla
   useEffect(() => {
@@ -75,132 +109,107 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
   };
 
   return (
-    <div className="app-shell" style={{ display: 'flex', height: '100vh', background: '#f1f5f9' }}>
+    <div className="app-shell">
       
+      {/* Overlay para cerrar Sidebar en móviles al hacer click fuera */}
       {!esCiudadano && (
-        <aside style={{
-          width: '260px',
-          minWidth: '260px',
-          background: 'linear-gradient(180deg, #0c1929 0%, #111d2e 100%)',
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
-          position: 'relative',
-          zIndex: 50
-        }}>
+        <div 
+          className={`sidebar-overlay ${isSidebarOpen ? "active" : ""}`} 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+
+      {/* Cabecera Móvil para Roles de Gestión / Administración */}
+      {!esCiudadano && (
+        <header className="mobile-admin-header">
+          <button className="hamburguesa-btn" onClick={() => setIsSidebarOpen(true)}>
+            ☰
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <IsotipoLogo />
+            <span style={{ fontSize: "16px", fontWeight: "800", color: "var(--primary)" }}>CivicReports</span>
+          </div>
+          <div className="role-badge-mini">{etiquetaRol}</div>
+        </header>
+      )}
+
+      {/* Sidebar Principal (Admin/SuperAdmin/Tecnico) */}
+      {!esCiudadano && (
+        <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
           {/* Branding */}
-          <div style={{
-            padding: '24px 20px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.4)'
-            }}>
-              📍
-            </div>
+          <div className="brand" style={{ padding: "1.25rem 0.5rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <IsotipoLogo color="#fff" />
             <div>
-              <div style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '-0.02em' }}>CivicReports</div>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>{etiquetaRol}</div>
+              <div style={{ fontSize: "16px", fontWeight: "800", letterSpacing: "-0.02em", color: "#fff" }}>CivicReports</div>
+              <div className="role-tag">{etiquetaRol}</div>
             </div>
           </div>
 
           {/* User Card */}
           <div style={{
-            margin: '4px 16px 20px',
-            padding: '14px 16px',
-            background: 'rgba(37,99,235,0.12)',
-            borderRadius: '14px',
-            border: '1px solid rgba(37,99,235,0.2)'
+            margin: "1.25rem 0.25rem",
+            padding: "0.85rem 1rem",
+            background: "var(--primary-glow)",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid rgba(122, 24, 53, 0.3)"
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '13px',
-                fontWeight: '800',
-                color: '#fff'
+                width: "34px",
+                height: "34px",
+                borderRadius: "var(--radius-sm)",
+                background: "var(--accent-gold)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "13px",
+                fontWeight: "800",
+                color: "var(--dark-bg)"
               }}>
                 {(nombreUsuario || "AG").substring(0, 2).toUpperCase()}
               </div>
-              <div style={{ overflow: 'hidden' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ overflow: "hidden" }}>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {nombreUsuario || "Agente Gubernamental"}
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "500" }}>
                   Nicaragua
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav style={{ flex: 1, padding: '0 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {/* Navigation Links */}
+          <nav className="nav-links">
             {enlaces.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  textDecoration: 'none',
-                  fontSize: '14px',
-                  fontWeight: isActive ? '700' : '500',
-                  color: isActive ? '#fff' : '#94a3b8',
-                  background: isActive ? 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)' : 'transparent',
-                  boxShadow: isActive ? '0 4px 12px rgba(37,99,235,0.3)' : 'none',
-                  transition: 'all 0.2s ease',
-                  position: 'relative'
-                })}
+                className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
               >
-                <span style={{ fontSize: '16px', width: '20px', textAlign: 'center' }}>{item.icon}</span>
+                <span style={{ fontSize: "16px", width: "20px", textAlign: "center" }}>{item.icon}</span>
                 <span style={{ flex: 1 }}>{item.label}</span>
-                {location.pathname === item.to && (
-                  <span style={{ fontSize: '12px', opacity: 0.8 }}>›</span>
-                )}
               </NavLink>
             ))}
           </nav>
 
           {/* Técnico: modo ciudadano */}
           {rolReal === "tecnico" && (
-            <div style={{ padding: '0 12px', marginBottom: '8px' }}>
+            <div style={{ padding: "0 4px", marginTop: "1rem" }}>
               <NavLink
                 to="/ciudadano/reportes"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  textDecoration: 'none',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#3b82f6',
-                  background: 'rgba(59, 130, 246, 0.08)',
-                  border: '1px solid rgba(59,130,246,0.15)'
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "0.85rem 1rem",
+                  borderRadius: "var(--radius-md)",
+                  textDecoration: "none",
+                  fontSize: "13px",
+                  fontWeight: "700",
+                  color: "var(--accent-gold)",
+                  background: "rgba(194, 159, 104, 0.08)",
+                  border: "1px solid rgba(194, 159, 104, 0.15)"
                 }}
               >
                 🔄 Ir a Modo Ciudadano
@@ -208,74 +217,152 @@ export default function DisenoAplicacion({ rol, rolReal, nombreUsuario, alCerrar
             </div>
           )}
 
-          {/* Logout */}
+          {/* Logout button */}
           <button
             onClick={manejarCerrarSesion}
             disabled={cerrando}
-            style={{
-              margin: '12px 16px 20px',
-              padding: '12px 16px',
-              borderRadius: '12px',
-              background: 'rgba(255,255,255,0.04)',
-              color: '#94a3b8',
-              border: '1px solid rgba(255,255,255,0.06)',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              transition: 'all 0.2s'
-            }}
+            className="sidebar-logout"
+            style={{ margin: "auto 0 0.5rem" }}
           >
             <span>↩</span> {cerrando ? "Saliendo..." : "Salir"}
           </button>
         </aside>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Armazón para el contenido (Con cabecera o bottom-nav para ciudadano) */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         
+        {/* Cabecera Desktop Ciudadano */}
         {esCiudadano && (
-          <header style={{ 
-            height: '70px', 
-            background: 'rgba(255, 255, 255, 0.8)', 
-            backdropFilter: 'blur(10px)',
-            borderBottom: '1px solid #e2e8f0', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            padding: '0 2rem',
-            zIndex: 10,
-            position: 'sticky',
-            top: 0
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-              <h2 style={{ margin: 0, color: '#1e293b', fontWeight: '900', fontSize: '1.4rem' }}>CivicReports</h2>
-              <nav style={{ display: 'flex', gap: '8px' }}>
-                <NavLink to="/ciudadano/reportes" style={({ isActive }) => ({ padding: '8px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.95rem', color: isActive ? '#1f64ff' : '#64748b', background: isActive ? '#f0f7ff' : 'transparent' })}>📊 Reportes</NavLink>
-                <NavLink to="/ciudadano/sugerencias" style={({ isActive }) => ({ padding: '8px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.95rem', color: isActive ? '#1f64ff' : '#64748b', background: isActive ? '#f0f7ff' : 'transparent' })}>💡 Sugerencias</NavLink>
-                <NavLink to="/ciudadano/perfil" style={({ isActive }) => ({ padding: '8px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.95rem', color: isActive ? '#1f64ff' : '#64748b', background: isActive ? '#f0f7ff' : 'transparent' })}>👤 Mi Perfil</NavLink>
+          <header className="citizen-desktop-header">
+            <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <IsotipoLogo />
+                <h2 style={{ margin: 0, color: "var(--primary)", fontWeight: "900", fontSize: "1.4rem" }}>CivicReports</h2>
+              </div>
+              <nav style={{ display: "flex", gap: "6px" }}>
+                <NavLink 
+                  to="/ciudadano/reportes" 
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                  style={{ padding: "8px 20px" }}
+                >
+                  📊 Reportes
+                </NavLink>
+                <NavLink 
+                  to="/ciudadano/sugerencias" 
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                  style={{ padding: "8px 20px" }}
+                >
+                  💡 Sugerencias
+                </NavLink>
+                <NavLink 
+                  to="/ciudadano/perfil" 
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                  style={{ padding: "8px 20px" }}
+                >
+                  👤 Mi Perfil
+                </NavLink>
               </nav>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '0.9rem' }}>{nombreUsuario}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>Ciudadano Activo</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontWeight: "800", color: "var(--text-primary)", fontSize: "0.9rem" }}>{nombreUsuario}</div>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: "600" }}>Ciudadano Activo</div>
               </div>
               
               {rolReal === "tecnico" && (
-                <NavLink to="/tecnico/tareas" style={{ padding: '8px 16px', borderRadius: '10px', background: '#f8fafc', color: '#334155', textDecoration: 'none', fontSize: '0.85rem', fontWeight: '700', border: '1px solid #e2e8f0' }}>🛠️ Modo Técnico</NavLink>
+                <NavLink 
+                  to="/tecnico/tareas" 
+                  style={{ 
+                    padding: "8px 16px", 
+                    borderRadius: "var(--radius-sm)", 
+                    background: "var(--primary-light)", 
+                    color: "var(--primary)", 
+                    textDecoration: "none", 
+                    fontSize: "0.85rem", 
+                    fontWeight: "700", 
+                    border: "1px solid rgba(122, 24, 53, 0.15)" 
+                  }}
+                >
+                  🛠️ Modo Técnico
+                </NavLink>
               )}
 
-              <button onClick={manejarCerrarSesion} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800' }}>🚪</button>
+              <button 
+                onClick={manejarCerrarSesion} 
+                style={{ 
+                  background: "#fee4e2", 
+                  color: "#d92d20", 
+                  border: "none", 
+                  padding: "10px 14px", 
+                  borderRadius: "var(--radius-sm)", 
+                  cursor: "pointer", 
+                  fontWeight: "800" 
+                }}
+              >
+                🚪 Cerrar Sesión
+              </button>
             </div>
           </header>
         )}
 
-        <main className="content" style={{ flex: 1, overflowY: 'auto', padding: esCiudadano ? '2rem' : '0' }}>
+        {/* Cabecera Móvil Ciudadano */}
+        {esCiudadano && (
+          <header className="citizen-mobile-header">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <IsotipoLogo />
+              <h2 className="citizen-mobile-brand">CivicReports</h2>
+            </div>
+            <div className="citizen-mobile-user">
+              <span>{nombreUsuario?.split(" ")[0]}</span>
+              <button 
+                onClick={manejarCerrarSesion} 
+                style={{ 
+                  background: "none", 
+                  border: "none", 
+                  fontSize: "1.25rem", 
+                  cursor: "pointer", 
+                  padding: "4px" 
+                }}
+              >
+                🚪
+              </button>
+            </div>
+          </header>
+        )}
+
+        {/* Contenido Principal */}
+        <main className="content" style={{ flex: 1, overflowY: "auto", padding: esCiudadano ? "1.5rem" : "0" }}>
           <Outlet />
         </main>
+
+        {/* Bottom Navigation Bar Ciudadano (Sóvil/Mobile) */}
+        {esCiudadano && (
+          <nav className="bottom-nav">
+            <NavLink 
+              to="/ciudadano/reportes" 
+              className={({ isActive }) => `bottom-nav-link ${isActive ? "active" : ""}`}
+            >
+              <span className="bottom-nav-icon">📊</span>
+              <span>Reportes</span>
+            </NavLink>
+            <NavLink 
+              to="/ciudadano/sugerencias" 
+              className={({ isActive }) => `bottom-nav-link ${isActive ? "active" : ""}`}
+            >
+              <span className="bottom-nav-icon">💡</span>
+              <span>Sugerencias</span>
+            </NavLink>
+            <NavLink 
+              to="/ciudadano/perfil" 
+              className={({ isActive }) => `bottom-nav-link ${isActive ? "active" : ""}`}
+            >
+              <span className="bottom-nav-icon">👤</span>
+              <span>Mi Perfil</span>
+            </NavLink>
+          </nav>
+        )}
 
         {/* 🤖 Widget Flotante del Chatbot de IA: CivicReport's Bot */}
         {rol === "admin" && <ChatbotWidget entidadId={perfil?.id_entidad} />}

@@ -45,6 +45,7 @@ database/
 trello_reference.py
 
 tableau_data/
+tableau/
 
 datos_tableau_civicreport.csv
 
