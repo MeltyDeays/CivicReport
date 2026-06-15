@@ -1,8 +1,9 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useRef } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 
-const CanvasRevealEffect = lazy(() => import("../Components/ui/canvas-reveal-effect"));
+import CivicReportsLogo from "../Components/ui/CivicReportsLogo";
+import CivicNetworkWatermark from "../Components/ui/CivicNetworkWatermark";
 import { verificarIdentidadBiometrica } from "../services/biometricClient";
 import BiometricIdentitySection from "../modules/auth/components/BiometricIdentitySection";
 const CODIGOS_MUNICIPIOS_NICARAGUA = new Set([
@@ -30,8 +31,6 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [exito, setExito] = useState("");
-  const [initialCanvasVisible, setInitialCanvasVisible] = useState(true);
-  const [reverseCanvasVisible, setReverseCanvasVisible] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -301,9 +300,6 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
       setNombreCompleto("");
       setCodigoInvitacion("");
 
-      setReverseCanvasVisible(true);
-      setTimeout(() => setInitialCanvasVisible(false), 50);
-
       // Redirigir automáticamente al login después de 3 segundos
       setTimeout(() => {
         alIrLogin();
@@ -325,35 +321,16 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
   return (
     <div className="sif-root">
       <div className="sif-bg">
-        <Suspense fallback={<div className="sif-canvas-bg" />}>
-          {(initialCanvasVisible || reverseCanvasVisible) && (
-            <div className="sif-canvas-layer">
-              <CanvasRevealEffect
-                key={reverseCanvasVisible ? "outro" : "intro"}
-                animationSpeed={reverseCanvasVisible ? 4 : 3}
-                containerClassName="sif-canvas-bg"
-                colors={[[255, 255, 255], [255, 255, 255]]}
-                dotSize={6}
-                reverse={reverseCanvasVisible}
-              />
-            </div>
-          )}
-        </Suspense>
-        <div className="sif-radial-overlay" />
-        <div className="sif-top-gradient" />
+        <div className="sif-bg-base" aria-hidden="true" />
+        <CivicNetworkWatermark />
+        <div className="sif-bg-dots" aria-hidden="true" />
       </div>
 
       <div className="sif-content">
         <header className="sif-navbar">
           <div className="sif-navbar-inner">
             <a href="https://precious-crostata-10c1d1.netlify.app" target="_blank" rel="noopener noreferrer" className="sif-nav-logo-link">
-              <div className="sif-nav-logo">
-                <span className="sif-nav-dot sif-dot-top" />
-                <span className="sif-nav-dot sif-dot-left" />
-                <span className="sif-nav-dot sif-dot-right" />
-                <span className="sif-nav-dot sif-dot-bottom" />
-              </div>
-              <span className="sif-nav-brand">CivicReports</span>
+              <CivicReportsLogo height={30} />
             </a>
 
             <div className="sif-nav-actions">
@@ -409,8 +386,8 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                   className="sif-step-content"
                 >
                   <div className="reg-page-header">
-                    <div className="sif-step-header reg-page-header__text">
-                      <h1 className="sif-title">Únete a CivicReports</h1>
+                    <div className="reg-page-header__brand">
+                      <CivicReportsLogo height={42} className="reg-header-logo" />
                       <p className="sif-subtitle">Selecciona tu tipo de cuenta</p>
                     </div>
                     <div className="reg-tabs">
@@ -533,7 +510,7 @@ export default function VistaRegistro({ alRegistroCiudadano, alRegistroInstituci
                       {tab !== "institucional" && (
                         <div className="reg-form-col reg-form-col--bio">
                           <BiometricIdentitySection
-                            compact
+                            light
                             onSelfieCapture={manejarCapturaSelfie}
                             selfieDone={selfieCapturada}
                             frenteInputRef={frenteInputRef}
@@ -569,66 +546,37 @@ const REG_STYLES = `
     min-height: 100vh;
     max-height: 100vh;
     overflow: hidden;
-    background: #000;
+    background: #f7f5f2;
     position: relative;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --cr-maroon: #7A1835;
+    --cr-maroon-dark: #5C1228;
+    --cr-maroon-light: #9B2347;
+    --cr-ink: #0a0a0a;
+    --cr-muted: #64748b;
   }
 
   .sif-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
+    overflow: hidden;
   }
 
-  .sif-canvas-layer {
+  .sif-bg-base {
     position: absolute;
     inset: 0;
+    background:
+      linear-gradient(160deg, #fafafa 0%, #f3f1ee 45%, #ece8e4 100%);
   }
 
-  .sif-canvas-bg {
-    height: 100%;
-    width: 100%;
-    position: relative;
-    background: #000;
-  }
-
-  .cre-container {
-    height: 100%;
-    position: relative;
-    width: 100%;
-  }
-
-  .cre-inner {
-    height: 100%;
-    width: 100%;
-  }
-
-  .cre-gradient {
+  .sif-bg-dots {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, black, transparent);
-  }
-
-  .cre-canvas {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-    width: 100%;
-  }
-
-  .sif-radial-overlay {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(0,0,0,1) 0%, transparent 100%);
-  }
-
-  .sif-top-gradient {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 33%;
-    background: linear-gradient(to bottom, black, transparent);
+    opacity: 0.45;
+    background-image: radial-gradient(circle, rgba(122, 24, 53, 0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 15%, transparent 100%);
   }
 
   .sif-content {
@@ -650,11 +598,12 @@ const REG_STYLES = `
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 18px;
-    backdrop-filter: blur(12px);
+    padding: 8px 16px 8px 14px;
+    backdrop-filter: blur(14px);
     border-radius: 9999px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(10, 10, 10, 0.65);
+    border: 1px solid rgba(122, 24, 53, 0.1);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 4px 24px rgba(122, 24, 53, 0.07), inset 0 1px 0 rgba(255,255,255,0.9);
     width: calc(100% - 2rem);
     max-width: 900px;
   }
@@ -670,41 +619,9 @@ const REG_STYLES = `
   .sif-nav-logo-link {
     display: flex;
     align-items: center;
-    gap: 10px;
     text-decoration: none;
     flex-shrink: 0;
   }
-
-  .sif-nav-brand {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.02em;
-  }
-
-  .sif-nav-logo {
-    position: relative;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .sif-nav-dot {
-    position: absolute;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #e5e5e5;
-    opacity: 0.8;
-  }
-
-  .sif-dot-top { top: 0; left: 50%; transform: translateX(-50%); }
-  .sif-dot-left { left: 0; top: 50%; transform: translateY(-50%); }
-  .sif-dot-right { right: 0; top: 50%; transform: translateY(-50%); }
-  .sif-dot-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
 
   .sif-nav-actions {
     display: flex;
@@ -714,17 +631,23 @@ const REG_STYLES = `
   }
 
   .sif-nav-login-btn {
-    padding: 7px 14px;
+    padding: 7px 16px;
     font-size: 12px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.06);
-    color: #d1d5db;
+    font-weight: 600;
+    border: none;
+    background: linear-gradient(135deg, var(--cr-maroon) 0%, var(--cr-maroon-dark) 100%);
+    color: #fff;
     border-radius: 9999px;
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(122, 24, 53, 0.25);
   }
-  .sif-nav-login-btn:hover { border-color: rgba(255,255,255,0.3); color: #fff; background: rgba(255,255,255,0.1); }
+  .sif-nav-login-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(122, 24, 53, 0.32);
+  }
 
   .sif-form-area {
     flex: 1;
@@ -752,33 +675,33 @@ const REG_STYLES = `
 
   .sif-title {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.15;
-    letter-spacing: -0.02em;
-    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cr-ink);
     margin: 0;
   }
 
   .sif-subtitle {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.55);
-    font-weight: 400;
+    font-size: 0.82rem;
+    color: var(--cr-muted);
+    font-weight: 500;
     margin: 0;
   }
 
   .sif-error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    padding: 12px;
-    border-radius: 12px;
-    font-size: 13px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.22);
+    color: #b91c1c;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12px;
     text-align: center;
-    margin-top: 8px;
   }
 
   .sif-success-icon-wrap {
-    padding: 40px 0;
+    padding: 32px 0;
     display: flex;
     justify-content: center;
   }
@@ -787,22 +710,32 @@ const REG_STYLES = `
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: linear-gradient(to bottom right, #fff, rgba(255,255,255,0.7));
+    background: linear-gradient(135deg, var(--cr-maroon) 0%, var(--cr-maroon-dark) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #000;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(122, 24, 53, 0.3);
   }
 
   .reg-form-container {
     width: 100%;
-    max-width: 1320px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0;
-    height: 100%;
+    padding: 1.25rem 1.75rem;
+    height: auto;
+    max-height: calc(100vh - 72px);
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(122, 24, 53, 0.1);
+    border-radius: 20px;
+    box-shadow:
+      0 20px 56px rgba(122, 24, 53, 0.07),
+      0 1px 0 rgba(255,255,255,0.9) inset;
   }
 
   .reg-page-header {
@@ -813,6 +746,13 @@ const REG_STYLES = `
     margin-bottom: 4px;
   }
 
+  .reg-page-header__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
   @media (min-width: 900px) {
     .reg-page-header {
       flex-direction: row;
@@ -821,17 +761,22 @@ const REG_STYLES = `
       text-align: left;
       gap: 1.5rem;
     }
-    .reg-page-header__text { text-align: left; }
+    .reg-page-header__brand {
+      align-items: flex-start;
+      text-align: left;
+    }
     .reg-tabs { flex-shrink: 0; max-width: 380px; }
   }
+
+  .reg-header-logo { filter: drop-shadow(0 2px 6px rgba(122, 24, 53, 0.08)); }
 
   .reg-tabs {
     display: flex;
     gap: 4px;
-    background: rgba(0,0,0,0.4);
+    background: #f1eeeb;
     padding: 4px;
     border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(122, 24, 53, 0.08);
     width: 100%;
   }
 
@@ -843,9 +788,9 @@ const REG_STYLES = `
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s ease;
     background: transparent;
-    color: #94a3b8;
+    color: var(--cr-muted);
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -854,9 +799,10 @@ const REG_STYLES = `
   }
 
   .reg-tab-active {
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(255,255,255,0.08);
+    background: #fff;
+    color: var(--cr-maroon);
+    box-shadow: 0 2px 10px rgba(122, 24, 53, 0.1);
+    border: 1px solid rgba(122, 24, 53, 0.12);
   }
 
   .reg-tab-icon { font-size: 14px; }
@@ -894,14 +840,8 @@ const REG_STYLES = `
     min-height: 0;
   }
 
-  .reg-form-col--bio {
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .reg-form-col--fields {
-    justify-content: center;
-  }
+  .reg-form-col--bio { min-height: 0; overflow: hidden; }
+  .reg-form-col--fields { justify-content: center; }
 
   .reg-form-actions {
     display: flex;
@@ -924,29 +864,14 @@ const REG_STYLES = `
   }
 
   @media (max-width: 899px) {
-    .sif-root {
-      height: auto;
-      max-height: none;
-      overflow: auto;
-    }
+    .sif-root { height: auto; max-height: none; overflow: auto; }
     .sif-content { height: auto; overflow: visible; }
-    .sif-form-area {
-      height: auto;
-      overflow: visible;
-      padding: 88px 1rem 2rem;
-    }
+    .sif-form-area { height: auto; overflow: visible; padding: 88px 1rem 2rem; }
     .sif-step-content { overflow: visible; max-height: none; }
-    .reg-form-layout {
-      grid-template-columns: 1fr;
-    }
-    .reg-form-actions {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .reg-form-actions .reg-login-link {
-      text-align: center;
-      white-space: normal;
-    }
+    .reg-form-container { padding: 1rem; border-radius: 16px; }
+    .reg-form-layout { grid-template-columns: 1fr; }
+    .reg-form-actions { flex-direction: column; align-items: stretch; }
+    .reg-form-actions .reg-login-link { text-align: center; white-space: normal; }
   }
 
   .reg-input-group {
@@ -957,50 +882,43 @@ const REG_STYLES = `
 
   .reg-label {
     font-size: 11px;
-    color: #cbd5e1;
-    font-weight: 500;
+    color: #334155;
+    font-weight: 600;
     margin-left: 4px;
+    letter-spacing: 0.02em;
   }
 
   .reg-input {
     width: 100%;
     padding: 9px 12px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.18);
+    background: #fff;
+    border: 1px solid rgba(122, 24, 53, 0.14);
     border-radius: 10px;
-    color: #fff;
+    color: var(--cr-ink);
     font-size: 13px;
     outline: none;
     transition: all 0.2s ease;
     box-sizing: border-box;
   }
   .reg-input:focus {
-    border-color: rgba(255,255,255,0.45);
-    background: rgba(255,255,255,0.12);
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+    border-color: rgba(122, 24, 53, 0.45);
+    box-shadow: 0 0 0 3px rgba(122, 24, 53, 0.08);
   }
-  .reg-input::placeholder { color: rgba(255,255,255,0.4); }
+  .reg-input::placeholder { color: #94a3b8; }
 
   .reg-input-mono { font-family: monospace; letter-spacing: 1px; }
 
   .reg-input-code {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.35);
-    color: #93bbfc;
+    background: rgba(122, 24, 53, 0.04);
+    border-color: rgba(122, 24, 53, 0.25);
+    color: var(--cr-maroon);
     font-weight: bold;
     letter-spacing: 1px;
   }
 
-  .reg-hint {
-    font-size: 11px;
-    color: #64748b;
-    margin-left: 4px;
-  }
+  .reg-hint { font-size: 11px; color: var(--cr-muted); margin-left: 4px; }
 
-  .reg-row {
-    display: flex;
-    gap: 10px;
-  }
+  .reg-row { display: flex; gap: 10px; }
 
   .reg-submit-btn {
     width: 100%;
@@ -1008,38 +926,40 @@ const REG_STYLES = `
     padding: 11px;
     border-radius: 9999px;
     border: none;
-    background: linear-gradient(to bottom right, #fff, rgba(255,255,255,0.8));
-    color: #000;
+    background: linear-gradient(135deg, var(--cr-maroon) 0%, var(--cr-maroon-dark) 100%);
+    color: #fff;
     font-size: 13px;
     font-weight: 700;
+    letter-spacing: 0.02em;
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(122, 24, 53, 0.28);
   }
   .reg-submit-btn:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 10px 20px -10px rgba(255,255,255,0.3);
+    box-shadow: 0 10px 28px rgba(122, 24, 53, 0.35);
+    filter: brightness(1.05);
   }
   .reg-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .reg-login-link {
     background: none;
     border: none;
-    color: #94a3b8;
+    color: var(--cr-muted);
     font-size: 12px;
     cursor: pointer;
     transition: color 0.2s;
     padding: 0;
   }
-  .reg-login-link:hover { color: #fff; }
+  .reg-login-link:hover { color: var(--cr-maroon); }
 
   .reg-login-accent {
-    color: #60a5fa;
-    font-weight: 600;
+    color: var(--cr-maroon);
+    font-weight: 700;
   }
 
   @media (max-height: 740px) and (min-width: 900px) {
     .sif-form-area { padding-top: 60px; padding-bottom: 0.5rem; }
-    .sif-title { font-size: 1.25rem; }
     .reg-form-layout { gap: 0.75rem; }
     .reg-form-col { gap: 8px; }
     .bio-section--compact { padding: 0.5rem 0.65rem; }

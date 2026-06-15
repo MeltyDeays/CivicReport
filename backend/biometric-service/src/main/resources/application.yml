@@ -14,10 +14,10 @@ biometric:
   detection:
     iou-thresh: 0.4
   thresholds:
-    laplacian-variance-min: 100.0
-    moire-score-max: 0.65
+    laplacian-variance-min: 45.0
+    moire-score-max: 0.75
     onnx-spoof-min: 0.85
-    face-match-min: 0.50
+    face-match-min: 0.35
     cedula-face-match-min: 0.85
     histogram-face-match-min: 0.12
   models:

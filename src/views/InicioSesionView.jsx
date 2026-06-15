@@ -2,6 +2,9 @@ import { useState, lazy, Suspense } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 
+import CivicReportsLogo from "../Components/ui/CivicReportsLogo";
+import CivicNetworkWatermark from "../Components/ui/CivicNetworkWatermark";
+
 const CanvasRevealEffect = lazy(() => import("../Components/ui/canvas-reveal-effect"));
 
 export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alIrRegistro }) {
@@ -35,22 +38,23 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
   return (
     <div className="sif-root">
       <div className="sif-bg">
-        <Suspense fallback={<div className="sif-canvas-bg" />}>
+        <div className="sif-bg-base" aria-hidden="true" />
+        <CivicNetworkWatermark />
+        <div className="sif-bg-dots" aria-hidden="true" />
+        <Suspense fallback={null}>
           {(initialCanvasVisible || reverseCanvasVisible) && (
             <div className="sif-canvas-layer">
               <CanvasRevealEffect
                 key={reverseCanvasVisible ? "outro" : "intro"}
-                animationSpeed={reverseCanvasVisible ? 4 : 3}
+                animationSpeed={reverseCanvasVisible ? 4 : 2.5}
                 containerClassName="sif-canvas-bg"
-                colors={[[255, 255, 255], [255, 255, 255]]}
-                dotSize={6}
+                colors={[[122, 24, 53], [92, 18, 36], [155, 35, 71]]}
+                dotSize={4}
                 reverse={reverseCanvasVisible}
               />
             </div>
           )}
         </Suspense>
-        <div className="sif-radial-overlay" />
-        <div className="sif-top-gradient" />
       </div>
 
       <div className="sif-content">
@@ -94,7 +98,7 @@ export default function VistaInicioSesion({ alIniciarSesion, cargandoSesion, alI
                   className="sif-step-content"
                 >
                   <div className="sif-step-header">
-                    <h1 className="sif-title">CivicReports</h1>
+                    <CivicReportsLogo height={48} className="sif-header-logo" />
                     <p className="sif-subtitle">Gestión Ciudadana Inteligente</p>
                   </div>
 
@@ -183,13 +187,7 @@ function SifNavbar({ alIrRegistro }) {
     <header className="sif-navbar">
       <div className="sif-navbar-inner">
         <a href={LANDING} target="_blank" rel="noopener noreferrer" className="sif-nav-logo-link">
-          <div className="sif-nav-logo">
-            <span className="sif-nav-dot sif-dot-top" />
-            <span className="sif-nav-dot sif-dot-left" />
-            <span className="sif-nav-dot sif-dot-right" />
-            <span className="sif-nav-dot sif-dot-bottom" />
-          </div>
-          <span className="sif-nav-brand">CivicReports</span>
+          <CivicReportsLogo height={28} />
         </a>
 
         <div className="sif-nav-actions">
@@ -208,27 +206,48 @@ const SIF_STYLES = `
     width: 100%;
     flex-direction: column;
     min-height: 100vh;
-    background: #000;
+    background: #f7f5f2;
     position: relative;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --cr-maroon: #7A1835;
+    --cr-maroon-dark: #5C1228;
+    --cr-ink: #0a0a0a;
+    --cr-muted: #64748b;
   }
 
   .sif-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
+    overflow: hidden;
+  }
+
+  .sif-bg-base {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #fafafa 0%, #f3f1ee 45%, #ece8e4 100%);
+  }
+
+  .sif-bg-dots {
+    position: absolute;
+    inset: 0;
+    opacity: 0.45;
+    background-image: radial-gradient(circle, rgba(122, 24, 53, 0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 15%, transparent 100%);
   }
 
   .sif-canvas-layer {
     position: absolute;
     inset: 0;
+    opacity: 0.35;
   }
 
   .sif-canvas-bg {
     height: 100%;
     width: 100%;
     position: relative;
-    background: #000;
+    background: transparent;
   }
 
   .cre-container {
@@ -245,7 +264,7 @@ const SIF_STYLES = `
   .cre-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, black, transparent);
+    background: linear-gradient(to top, rgba(247, 245, 242, 0.9) 0%, transparent 55%);
   }
 
   .cre-canvas {
@@ -256,18 +275,11 @@ const SIF_STYLES = `
   }
 
   .sif-radial-overlay {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(0,0,0,1) 0%, transparent 100%);
+    display: none;
   }
 
   .sif-top-gradient {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 33%;
-    background: linear-gradient(to bottom, black, transparent);
+    display: none;
   }
 
   .sif-content {
@@ -288,11 +300,12 @@ const SIF_STYLES = `
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 20px;
-    backdrop-filter: blur(12px);
+    padding: 8px 16px 8px 14px;
+    backdrop-filter: blur(14px);
     border-radius: 9999px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(10, 10, 10, 0.65);
+    border: 1px solid rgba(122, 24, 53, 0.1);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 4px 24px rgba(122, 24, 53, 0.07);
     width: calc(100% - 2rem);
     max-width: 900px;
   }
@@ -376,17 +389,22 @@ const SIF_STYLES = `
   }
 
   .sif-nav-login-btn {
-    padding: 7px 14px;
+    padding: 7px 16px;
     font-size: 12px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.06);
-    color: #d1d5db;
+    font-weight: 600;
+    border: none;
+    background: linear-gradient(135deg, var(--cr-maroon) 0%, var(--cr-maroon-dark) 100%);
+    color: #fff;
     border-radius: 9999px;
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(122, 24, 53, 0.25);
   }
-  .sif-nav-login-btn:hover { border-color: rgba(255,255,255,0.3); color: #fff; background: rgba(255,255,255,0.1); }
+  .sif-nav-login-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
 
   .sif-nav-beta-btn {
     padding: 7px 14px;
@@ -438,9 +456,18 @@ const SIF_STYLES = `
 
   .sif-form-container {
     width: 100%;
-    max-width: 400px;
-    margin-top: 150px;
-    padding: 0 20px;
+    max-width: 420px;
+    margin-top: 130px;
+    padding: 1.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(122, 24, 53, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 20px 56px rgba(122, 24, 53, 0.07);
+  }
+
+  .sif-header-logo {
+    margin: 0 auto 6px;
+    filter: drop-shadow(0 2px 6px rgba(122, 24, 53, 0.08));
   }
 
   .sif-step-content {
@@ -454,17 +481,18 @@ const SIF_STYLES = `
 
   .sif-title {
     font-size: 2.5rem;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.1;
-    letter-spacing: -0.02em;
-    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cr-ink);
     margin: 0;
   }
 
   .sif-subtitle {
-    font-size: 1.8rem;
-    color: rgba(255,255,255,0.7);
-    font-weight: 300;
+    font-size: 0.9rem;
+    color: var(--cr-muted);
+    font-weight: 500;
     margin: 0;
   }
 
@@ -480,17 +508,20 @@ const SIF_STYLES = `
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(2px);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #fff;
+    color: var(--cr-maroon);
+    border: 1px solid rgba(122, 24, 53, 0.18);
     border-radius: 9999px;
     padding: 12px 16px;
-    font-size: 15px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, box-shadow 0.2s;
   }
-  .sif-google-btn:hover { background: rgba(255,255,255,0.1); }
+  .sif-google-btn:hover {
+    background: rgba(122, 24, 53, 0.04);
+    box-shadow: 0 4px 14px rgba(122, 24, 53, 0.1);
+  }
 
   .sif-google-icon { font-size: 18px; }
 
@@ -503,11 +534,11 @@ const SIF_STYLES = `
   .sif-divider-line {
     flex: 1;
     height: 1px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(122, 24, 53, 0.12);
   }
 
   .sif-divider-text {
-    color: rgba(255,255,255,0.4);
+    color: var(--cr-muted);
     font-size: 13px;
   }
 
@@ -517,24 +548,22 @@ const SIF_STYLES = `
 
   .sif-input {
     width: 100%;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(4px);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.18);
+    background: #fff;
+    color: var(--cr-ink);
+    border: 1px solid rgba(122, 24, 53, 0.14);
     border-radius: 9999px;
     padding: 12px 16px;
     font-size: 15px;
     outline: none;
     text-align: center;
     box-sizing: border-box;
-    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
   .sif-input:focus {
-    border-color: rgba(255,255,255,0.45);
-    background: rgba(255,255,255,0.12);
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+    border-color: rgba(122, 24, 53, 0.45);
+    box-shadow: 0 0 0 3px rgba(122, 24, 53, 0.08);
   }
-  .sif-input::placeholder { color: rgba(255,255,255,0.4); }
+  .sif-input::placeholder { color: #94a3b8; }
 
   .sif-submit-arrow {
     position: absolute;
@@ -546,14 +575,15 @@ const SIF_STYLES = `
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, var(--cr-maroon) 0%, var(--cr-maroon-dark) 100%);
     border: none;
     color: #fff;
     cursor: pointer;
     overflow: hidden;
-    transition: background 0.2s;
+    transition: filter 0.2s;
+    box-shadow: 0 4px 12px rgba(122, 24, 53, 0.25);
   }
-  .sif-submit-arrow:hover { background: rgba(255,255,255,0.2); }
+  .sif-submit-arrow:hover { filter: brightness(1.08); }
   .sif-submit-arrow:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .sif-arrow-wrap {
@@ -595,9 +625,9 @@ const SIF_STYLES = `
   }
 
   .sif-error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #f87171;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.22);
+    color: #b91c1c;
     padding: 12px;
     border-radius: 12px;
     font-size: 13px;
@@ -607,8 +637,8 @@ const SIF_STYLES = `
 
   .sif-legal {
     font-size: 12px;
-    color: rgba(255,255,255,0.25);
-    padding-top: 40px;
+    color: #94a3b8;
+    padding-top: 24px;
     margin: 0;
   }
 
@@ -622,10 +652,11 @@ const SIF_STYLES = `
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: linear-gradient(to bottom right, #fff, rgba(255,255,255,0.7));
+    background: linear-gradient(135deg, var(--cr-maroon) 0%, var(--cr-maroon-dark) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #000;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(122, 24, 53, 0.3);
   }
 `;

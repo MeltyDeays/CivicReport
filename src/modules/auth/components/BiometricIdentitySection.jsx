@@ -17,6 +17,7 @@ export default function BiometricIdentitySection({
   onCedulaAtras,
   disabled = false,
   compact = false,
+  light = false,
 }) {
   const cedulaDone = Boolean(cedulaFrenteUrl && cedulaAtrasUrl);
   const steps = [
@@ -30,7 +31,7 @@ export default function BiometricIdentitySection({
   }, []);
 
   return (
-    <section className={`bio-section ${compact ? "bio-section--compact" : ""}`} aria-labelledby="bio-section-title">
+    <section className={`bio-section ${compact ? "bio-section--compact" : ""} ${light ? "bio-section--light" : ""}`} aria-labelledby="bio-section-title">
       <header className="bio-section__header">
         <div className="bio-section__title-row">
           <span className="bio-section__icon" aria-hidden="true">
@@ -259,6 +260,100 @@ export default function BiometricIdentitySection({
         }
         @media (max-width: 400px) {
           .bio-section__cedula-grid { grid-template-columns: 1fr; }
+        }
+        .bio-section--light {
+          background: #f8f6f4;
+          border-color: rgba(122, 24, 53, 0.12);
+        }
+        .bio-section--light .bio-section__title { color: #0a0a0a; }
+        .bio-section--light .bio-section__subtitle { color: #64748b; }
+        .bio-section--light .bio-section__icon {
+          background: rgba(122, 24, 53, 0.1);
+          color: #7A1835;
+        }
+        .bio-section--light .bio-section__step {
+          background: rgba(122, 24, 53, 0.04);
+          color: #94a3b8;
+        }
+        .bio-section--light .bio-section__step--active {
+          color: #7A1835;
+          border-color: rgba(122, 24, 53, 0.25);
+          background: rgba(122, 24, 53, 0.08);
+        }
+        .bio-section--light .bio-section__step--active .bio-section__step-num {
+          background: #7A1835;
+        }
+        .bio-section--light .bio-section__step--done {
+          color: #15803d;
+          border-color: rgba(21, 128, 61, 0.25);
+          background: rgba(21, 128, 61, 0.06);
+        }
+        .bio-section--light .bio-section__divider { color: #94a3b8; }
+        .bio-section--light .bio-section__divider::before,
+        .bio-section--light .bio-section__divider::after {
+          background: rgba(122, 24, 53, 0.12);
+        }
+        /* Estilos correctores de contraste en modo claro */
+        .bio-section--light .cedula-card__label {
+          color: #1e293b;
+        }
+        .bio-section--light .cedula-card__dropzone {
+          border-color: rgba(122, 24, 53, 0.25);
+          background: rgba(122, 24, 53, 0.02);
+        }
+        .bio-section--light .cedula-card__dropzone:hover {
+          border-color: #7A1835;
+          background: rgba(122, 24, 53, 0.06);
+        }
+        .bio-section--light .cedula-card__placeholder {
+          color: #475569;
+        }
+        .bio-section--light .cedula-card__side {
+          color: #0f172a;
+        }
+        .bio-section--light .cedula-card__tap {
+          color: #475569;
+          opacity: 0.95;
+        }
+        .bio-section--light .bio-scanner__mini-step {
+          color: #64748b;
+        }
+        .bio-section--light .bio-scanner__mini-dot {
+          background: #cbd5e1;
+        }
+        .bio-section--light .bio-scanner__mini-step--current {
+          color: #7A1835;
+        }
+        .bio-section--light .bio-scanner__mini-step--current .bio-scanner__mini-dot {
+          background: #7A1835;
+          box-shadow: 0 0 0 3px rgba(122, 24, 53, 0.22);
+        }
+        .bio-section--light .bio-scanner__mini-step--done {
+          color: #16a34a;
+        }
+        .bio-section--light .bio-scanner__mini-step--done .bio-scanner__mini-dot {
+          background: #16a34a;
+        }
+        .bio-section--light .bio-scanner__tips li {
+          color: #475569;
+        }
+        .bio-section--light .bio-scanner__tips li::before {
+          background: #cbd5e1;
+        }
+        .bio-section--light .bio-scanner__tip--on {
+          color: #0f172a;
+          font-weight: 500;
+        }
+        .bio-section--light .bio-scanner__tip--on::before {
+          background: #7A1835;
+        }
+        .bio-section--light .bio-scanner__retake {
+          border-color: rgba(122, 24, 53, 0.28);
+          background: rgba(122, 24, 53, 0.04);
+          color: #7a1835;
+        }
+        .bio-section--light .bio-scanner__retake:hover {
+          background: rgba(122, 24, 53, 0.08);
         }
       `}</style>
     </section>

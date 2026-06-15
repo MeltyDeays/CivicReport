@@ -141,17 +141,10 @@ public class FaceEmbeddingService {
             return FaceAlignment.align(bgr, face.landmarks(), INPUT_SIZE);
         }
         Mat crop = faceDetectionService.cropFace(bgr, face.bbox(), 0.25);
-        return upscaleIfSmall(crop);
-    }
-
-    private Mat upscaleIfSmall(Mat crop) {
-        if (crop.cols() >= 100 && crop.rows() >= 100) {
-            return crop;
-        }
-        Mat up = new Mat();
-        Imgproc.resize(crop, up, new Size(FACE_SIZE, FACE_SIZE), 0, 0, Imgproc.INTER_CUBIC);
+        Mat resized = new Mat();
+        Imgproc.resize(crop, resized, new Size(INPUT_SIZE, INPUT_SIZE), 0, 0, Imgproc.INTER_CUBIC);
         crop.release();
-        return up;
+        return resized;
     }
 
     private double openCvCompare(Mat faceA, Mat faceB) {
